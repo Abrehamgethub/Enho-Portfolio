@@ -315,91 +315,75 @@ function TeamSection() {
           </p>
         </div>
         
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {doctors.map((doctor, index) => (
-            <div 
-              key={index} 
-              className={`card hover:shadow-xl transition-shadow duration-300 flex flex-col h-full ${doctor.placeholder ? 'opacity-60' : ''}`}
-            >
-              {/* Avatar */}
-              <div className="flex justify-center mb-6">
-                <div className={`w-32 h-32 rounded-full flex items-center justify-center ${doctor.placeholder ? 'bg-secondary-200' : 'gradient-bg'}`}>
-                  {doctor.placeholder ? (
-                    <Users className="w-12 h-12 text-gray-400" />
-                  ) : (
+            <StaggerItem key={index}>
+              <HoverScale className="card hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
+                {/* Avatar */}
+                <div className="flex justify-center mb-6">
+                  <div className="w-32 h-32 rounded-full flex items-center justify-center gradient-bg">
                     <span className="text-4xl font-bold text-white">
                       {doctor.name.split(' ')[1]?.[0] || 'D'}
                     </span>
-                  )}
+                  </div>
                 </div>
-              </div>
-              
-              {/* Info */}
-              <div className="text-center mb-6">
-                <h3 className="text-xl font-bold">{doctor.name}</h3>
-                {doctor.credentials && (
-                  <p className="text-primary-500 font-medium">{doctor.credentials}</p>
-                )}
-                <p className="text-gray-500 text-sm mt-1">{doctor.role}</p>
-              </div>
-              
-              {/* Content wrapper for flex grow */}
-              <div className="flex-grow">
-                {/* Specialties */}
-                {!doctor.placeholder && (
-                  <>
-                    <div className="mb-4">
-                      <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Specialties</h4>
-                      <div className="flex flex-wrap gap-2">
-                        {doctor.specialties.map((specialty, i) => (
-                          <span key={i} className="text-xs bg-primary-50 text-primary-600 px-2 py-1 rounded-full">
-                            {specialty}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                    
-                    <div className="mb-4">
-                      <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Education</h4>
-                      <ul className="text-sm text-gray-600 space-y-1">
-                        {doctor.education.map((edu, i) => (
-                          <li key={i} className="flex items-start gap-2">
-                            <GraduationCap className="w-4 h-4 text-primary-400 mt-0.5 flex-shrink-0" />
-                            {edu}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                    
-                    <div>
-                      <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Experience</h4>
-                      <p className="text-sm text-gray-600">{doctor.experience}</p>
-                    </div>
-                  </>
-                )}
                 
-                {doctor.placeholder && (
-                  <p className="text-center text-gray-400 text-sm">
-                    Profile details will be updated shortly
-                  </p>
+                {/* Info */}
+                <div className="text-center mb-6">
+                  <h3 className="text-xl font-bold">{doctor.name}</h3>
+                  {doctor.credentials && (
+                    <p className="text-primary-500 font-medium">{doctor.credentials}</p>
+                  )}
+                  <p className="text-gray-500 text-sm mt-1">{doctor.role}</p>
+                </div>
+                
+                {/* Content wrapper for flex grow */}
+                <div className="flex-grow">
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Specialties</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {doctor.specialties.map((specialty, i) => (
+                        <span key={i} className="text-xs bg-primary-50 text-primary-600 px-2 py-1 rounded-full">
+                          {specialty}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Education</h4>
+                    <ul className="text-sm text-gray-600 space-y-1">
+                      {doctor.education.map((edu, i) => (
+                        <li key={i} className="flex items-start gap-2">
+                          <GraduationCap className="w-4 h-4 text-primary-400 mt-0.5 flex-shrink-0" />
+                          {edu}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-2">Experience</h4>
+                    <p className="text-sm text-gray-600">{doctor.experience}</p>
+                  </div>
+                </div>
+                
+                {/* Button always at bottom */}
+                {doctor.id && (
+                  <Link 
+                    href={`/team/${doctor.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-primary-500 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-primary-600 transition-colors"
+                  >
+                    View Full Profile
+                    <ChevronRight className="w-4 h-4" />
+                  </Link>
                 )}
-              </div>
-              
-              {/* Button always at bottom */}
-              {!doctor.placeholder && doctor.id && (
-                <Link 
-                  href={`/team/${doctor.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-6 w-full inline-flex items-center justify-center gap-2 bg-primary-500 text-white px-4 py-2.5 rounded-lg font-medium hover:bg-primary-600 transition-colors"
-                >
-                  View Full Profile
-                  <ChevronRight className="w-4 h-4" />
-                </Link>
-              )}
-            </div>
+              </HoverScale>
+            </StaggerItem>
           ))}
-        </div>
+        </StaggerContainer>
       </div>
     </section>
   )
