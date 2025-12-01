@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { 
@@ -29,20 +30,23 @@ import PodcastEpisodes from '@/components/PodcastEpisodes'
 
 // Navigation Component
 function Navigation() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
-      <div className="container-custom">
+      <div className="container-custom px-4">
         <div className="flex items-center justify-between h-16 md:h-20">
           <a href="#" className="flex items-center gap-2">
-            <Logo className="w-10 h-10" />
+            <Logo className="w-8 h-8 md:w-10 md:h-10" />
             <div className="flex flex-col leading-none">
-              <span className="font-heading font-bold text-xl text-gray-900">
+              <span className="font-heading font-bold text-lg md:text-xl text-gray-900">
                 እነሆ<span className="text-primary-500"> እኛ</span>
               </span>
-              <span className="text-[9px] text-gray-400 tracking-wider">ENEHO EGNA</span>
+              <span className="text-[8px] md:text-[9px] text-gray-400 tracking-wider">ENEHO EGNA</span>
             </div>
           </a>
           
+          {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
             <a href="#about" className="text-gray-600 hover:text-primary-500 transition-colors">About</a>
             <a href="#team" className="text-gray-600 hover:text-primary-500 transition-colors">Our Team</a>
@@ -50,7 +54,41 @@ function Navigation() {
             <a href="#podcast" className="text-gray-600 hover:text-primary-500 transition-colors">Podcast</a>
             <a href="#contact" className="btn-primary text-sm">Contact Us</a>
           </div>
+          
+          {/* Mobile Menu Button */}
+          <button 
+            className="md:hidden p-2 text-gray-600"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
         </div>
+        
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <motion.div 
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="md:hidden py-4 border-t border-gray-100"
+          >
+            <div className="flex flex-col gap-4">
+              <a href="#about" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">About</a>
+              <a href="#team" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Our Team</a>
+              <a href="#impact" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Impact</a>
+              <a href="#podcast" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Podcast</a>
+              <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="btn-primary text-sm text-center">Contact Us</a>
+            </div>
+          </motion.div>
+        )}
       </div>
     </nav>
   )
@@ -77,24 +115,24 @@ function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-r from-primary-900/90 via-primary-800/50 to-transparent"></div>
       </motion.div>
       
-      <div className="container-custom relative z-10 pb-16 pt-32">
+      <div className="container-custom relative z-10 pb-8 md:pb-16 pt-24 md:pt-32 px-4">
         <div className="max-w-2xl">
           <div className="text-white">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-2 mb-6"
+              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 md:px-4 md:py-2 mb-4 md:mb-6"
             >
-              <Mic className="w-4 h-4" />
-              <span className="text-sm font-medium">Health Media & Community Wellness</span>
+              <Mic className="w-3 h-3 md:w-4 md:h-4" />
+              <span className="text-xs md:text-sm font-medium">Health Media & Community Wellness</span>
             </motion.div>
             
             <motion.h1 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-6"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 md:mb-6"
             >
               Empowering Health,
               <br />
@@ -105,7 +143,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-lg md:text-xl text-white/90 mb-8 max-w-xl"
+              className="text-base md:text-lg lg:text-xl text-white/90 mb-6 md:mb-8 max-w-xl"
             >
               A collective of dedicated Ethiopian physicians bringing evidence-based health education, 
               community outreach, and medical expertise through modern media.
@@ -115,15 +153,15 @@ function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.9 }}
-              className="flex flex-wrap gap-4"
+              className="flex flex-col sm:flex-row gap-3 md:gap-4"
             >
-              <a href="#podcast" className="inline-flex items-center gap-2 bg-white text-primary-600 px-6 py-3 rounded-lg font-medium hover:bg-secondary-100 hover:scale-105 transition-all">
-                <Play className="w-5 h-5" />
+              <a href="#podcast" className="inline-flex items-center justify-center gap-2 bg-white text-primary-600 px-5 py-2.5 md:px-6 md:py-3 rounded-lg font-medium hover:bg-secondary-100 hover:scale-105 transition-all text-sm md:text-base">
+                <Play className="w-4 h-4 md:w-5 md:h-5" />
                 Listen to Podcast
               </a>
-              <a href="#team" className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm text-white px-6 py-3 rounded-lg font-medium hover:bg-white/30 hover:scale-105 transition-all border border-white/30">
+              <a href="#team" className="inline-flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 md:px-6 md:py-3 rounded-lg font-medium hover:bg-white/30 hover:scale-105 transition-all border border-white/30 text-sm md:text-base">
                 Meet the Team
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
               </a>
             </motion.div>
             
@@ -132,19 +170,19 @@ function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1.1 }}
-              className="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-white/20"
+              className="grid grid-cols-3 gap-3 md:gap-6 mt-8 md:mt-12 pt-6 md:pt-8 border-t border-white/20"
             >
               <div>
-                <div className="text-3xl md:text-4xl font-bold">55K+</div>
-                <div className="text-white/70 text-sm">Social Followers</div>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold">55K+</div>
+                <div className="text-white/70 text-xs sm:text-sm">Social Followers</div>
               </div>
               <div>
-                <div className="text-3xl md:text-4xl font-bold">8+</div>
-                <div className="text-white/70 text-sm">Training Programs</div>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold">8+</div>
+                <div className="text-white/70 text-xs sm:text-sm">Training Programs</div>
               </div>
               <div>
-                <div className="text-3xl md:text-4xl font-bold">3</div>
-                <div className="text-white/70 text-sm">Expert Physicians</div>
+                <div className="text-2xl sm:text-3xl md:text-4xl font-bold">3</div>
+                <div className="text-white/70 text-xs sm:text-sm">Expert Physicians</div>
               </div>
             </motion.div>
           </div>
@@ -697,27 +735,27 @@ function PodcastSection() {
         </FadeInUp>
 
         {/* Social Links */}
-        <FadeInUp delay={0.2} className="flex flex-wrap justify-center gap-4 mb-12">
-          <motion.a whileHover={{ scale: 1.05 }} href="https://www.youtube.com/@Eneho_Hakim" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-red-600 text-white px-5 py-3 rounded-lg font-medium hover:bg-red-700 transition-colors">
-            <Youtube className="w-5 h-5" />
-            YouTube (21K+)
+        <FadeInUp delay={0.2} className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 mb-8 md:mb-12">
+          <motion.a whileHover={{ scale: 1.05 }} href="https://www.youtube.com/@Eneho_Hakim" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 bg-red-600 text-white px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-lg font-medium hover:bg-red-700 transition-colors text-xs sm:text-sm md:text-base">
+            <Youtube className="w-4 h-4 sm:w-5 sm:h-5" />
+            <span className="hidden xs:inline">YouTube</span> (21K+)
           </motion.a>
-          <motion.a whileHover={{ scale: 1.05 }} href="https://t.me/Eneho_Tena" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#0088cc] text-white px-5 py-3 rounded-lg font-medium hover:bg-[#006699] transition-colors">
-            <Send className="w-5 h-5" />
+          <motion.a whileHover={{ scale: 1.05 }} href="https://t.me/Eneho_Tena" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#0088cc] text-white px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-lg font-medium hover:bg-[#006699] transition-colors text-xs sm:text-sm md:text-base">
+            <Send className="w-4 h-4 sm:w-5 sm:h-5" />
             Telegram
           </motion.a>
-          <motion.a whileHover={{ scale: 1.05 }} href="https://www.tiktok.com/@eneho_egna" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-black text-white px-5 py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+          <motion.a whileHover={{ scale: 1.05 }} href="https://www.tiktok.com/@eneho_egna" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 bg-black text-white px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-lg font-medium hover:bg-gray-800 transition-colors text-xs sm:text-sm md:text-base">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" viewBox="0 0 24 24" fill="currentColor">
               <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
             </svg>
-            TikTok (34K+)
+            <span className="hidden xs:inline">TikTok</span> (34K+)
           </motion.a>
-          <motion.a whileHover={{ scale: 1.05 }} href="https://www.linkedin.com/company/eneho-egna-እነሆ-እኛ-podcast" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#0077b5] text-white px-5 py-3 rounded-lg font-medium hover:bg-[#005885] transition-colors">
-            <Linkedin className="w-5 h-5" />
+          <motion.a whileHover={{ scale: 1.05 }} href="https://www.linkedin.com/company/eneho-egna-እነሆ-እኛ-podcast" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#0077b5] text-white px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-lg font-medium hover:bg-[#005885] transition-colors text-xs sm:text-sm md:text-base">
+            <Linkedin className="w-4 h-4 sm:w-5 sm:h-5" />
             LinkedIn
           </motion.a>
-          <motion.a whileHover={{ scale: 1.05 }} href="https://web.facebook.com/profile.php?id=61566388200183" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 bg-[#1877f2] text-white px-5 py-3 rounded-lg font-medium hover:bg-[#0d65d9] transition-colors">
-            <Facebook className="w-5 h-5" />
+          <motion.a whileHover={{ scale: 1.05 }} href="https://web.facebook.com/profile.php?id=61566388200183" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 sm:gap-2 bg-[#1877f2] text-white px-3 py-2 sm:px-4 sm:py-2.5 md:px-5 md:py-3 rounded-lg font-medium hover:bg-[#0d65d9] transition-colors text-xs sm:text-sm md:text-base">
+            <Facebook className="w-4 h-4 sm:w-5 sm:h-5" />
             Facebook
           </motion.a>
         </FadeInUp>
