@@ -280,7 +280,7 @@ function TeamSection() {
         "Virtual Assistants (ALX Africa)"
       ],
       experience: "Girum Hospital (ER & Dialysis), St Urael Internal Medicine Specialty Clinic",
-      image: null
+      image: "/dr-tigist.jpg"
     },
     {
       id: "dr-birucketawit",
@@ -321,10 +321,18 @@ function TeamSection() {
               <HoverScale className="card hover:shadow-xl transition-shadow duration-300 flex flex-col h-full">
                 {/* Avatar */}
                 <div className="flex justify-center mb-6">
-                  <div className="w-32 h-32 rounded-full flex items-center justify-center gradient-bg">
-                    <span className="text-4xl font-bold text-white">
-                      {doctor.name.split(' ')[1]?.[0] || 'D'}
-                    </span>
+                  <div className="w-32 h-32 rounded-full flex items-center justify-center overflow-hidden gradient-bg">
+                    {doctor.image ? (
+                      <img 
+                        src={doctor.image} 
+                        alt={doctor.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-4xl font-bold text-white">
+                        {doctor.name.split(' ')[1]?.[0] || 'D'}
+                      </span>
+                    )}
                   </div>
                 </div>
                 
