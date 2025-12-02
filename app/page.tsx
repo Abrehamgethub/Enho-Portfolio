@@ -97,7 +97,7 @@ function Navigation() {
 // Hero Section
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-end overflow-hidden">
+    <section className="relative min-h-screen flex flex-col overflow-hidden">
       {/* Team Photo as Background */}
       <motion.div 
         className="absolute inset-0"
@@ -108,21 +108,24 @@ function HeroSection() {
         <img 
           src="/team-photo.jpg" 
           alt="Eneho Egna Team - Dr. Melat, Dr. Tigist, and Dr. Birucketawit"
-          className="w-full h-full object-cover object-top"
+          className="w-full h-full object-cover object-center"
         />
-        {/* Gradient Overlay - seamless blend */}
-        <div className="absolute inset-0 bg-gradient-to-t from-primary-900 via-primary-800/80 to-transparent"></div>
-        <div className="absolute inset-0 bg-gradient-to-r from-primary-900/90 via-primary-800/50 to-transparent"></div>
+        {/* Gradient Overlay - only at the bottom to keep faces visible */}
+        <div className="absolute inset-x-0 bottom-0 h-[45%] bg-gradient-to-t from-primary-900 via-primary-900/95 to-transparent"></div>
       </motion.div>
       
-      <div className="container-custom relative z-10 pb-8 md:pb-16 pt-24 md:pt-32 px-4">
-        <div className="max-w-2xl">
-          <div className="text-white">
+      {/* Spacer to push content down - faces stay visible */}
+      <div className="flex-1"></div>
+      
+      {/* Content at the very bottom */}
+      <div className="relative z-10 pb-6 md:pb-10 px-4">
+        <div className="container-custom">
+          <div className="max-w-3xl text-white">
             <motion.div 
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.3 }}
-              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 md:px-4 md:py-2 mb-4 md:mb-6"
+              className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 md:px-4 md:py-2 mb-3 md:mb-4"
             >
               <Mic className="w-3 h-3 md:w-4 md:h-4" />
               <span className="text-xs md:text-sm font-medium">Health Media & Community Wellness</span>
@@ -132,57 +135,55 @@ function HeroSection() {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 }}
-              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold leading-tight mb-4 md:mb-6"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold leading-tight mb-3 md:mb-4"
             >
-              Empowering Health,
-              <br />
-              <span className="text-secondary-300">One Story at a Time</span>
+              Empowering Health, <span className="text-secondary-300">One Story at a Time</span>
             </motion.h1>
             
             <motion.p 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.7 }}
-              className="text-base md:text-lg lg:text-xl text-white/90 mb-6 md:mb-8 max-w-xl"
+              className="text-sm md:text-base lg:text-lg text-white/90 mb-4 md:mb-6 max-w-2xl"
             >
-              A collective of dedicated Ethiopian physicians bringing evidence-based health education, 
-              community outreach, and medical expertise through modern media.
+              A collective of dedicated Ethiopian physicians bringing evidence-based health education 
+              and community wellness through modern media.
             </motion.p>
             
             <motion.div 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.9 }}
-              className="flex flex-col sm:flex-row gap-3 md:gap-4"
+              className="flex flex-wrap gap-2 md:gap-3"
             >
-              <a href="#podcast" className="inline-flex items-center justify-center gap-2 bg-white text-primary-600 px-5 py-2.5 md:px-6 md:py-3 rounded-lg font-medium hover:bg-secondary-100 hover:scale-105 transition-all text-sm md:text-base">
-                <Play className="w-4 h-4 md:w-5 md:h-5" />
+              <a href="#podcast" className="inline-flex items-center justify-center gap-2 bg-white text-primary-600 px-4 py-2 md:px-5 md:py-2.5 rounded-lg font-medium hover:bg-secondary-100 hover:scale-105 transition-all text-sm">
+                <Play className="w-4 h-4" />
                 Listen to Podcast
               </a>
-              <a href="#team" className="inline-flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm text-white px-5 py-2.5 md:px-6 md:py-3 rounded-lg font-medium hover:bg-white/30 hover:scale-105 transition-all border border-white/30 text-sm md:text-base">
+              <a href="#team" className="inline-flex items-center justify-center gap-2 bg-white/20 backdrop-blur-sm text-white px-4 py-2 md:px-5 md:py-2.5 rounded-lg font-medium hover:bg-white/30 hover:scale-105 transition-all border border-white/30 text-sm">
                 Meet the Team
-                <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
+                <ChevronRight className="w-4 h-4" />
               </a>
             </motion.div>
             
-            {/* Stats */}
+            {/* Stats - compact row */}
             <motion.div 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 1.1 }}
-              className="grid grid-cols-3 gap-3 md:gap-6 mt-8 md:mt-12 pt-6 md:pt-8 border-t border-white/20"
+              className="flex flex-wrap gap-6 md:gap-10 mt-5 md:mt-6 pt-4 md:pt-5 border-t border-white/20"
             >
               <div>
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold">55K+</div>
-                <div className="text-white/70 text-xs sm:text-sm">Social Followers</div>
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold">55K+</div>
+                <div className="text-white/70 text-xs">Social Followers</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold">8+</div>
-                <div className="text-white/70 text-xs sm:text-sm">Training Programs</div>
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold">8+</div>
+                <div className="text-white/70 text-xs">Training Programs</div>
               </div>
               <div>
-                <div className="text-2xl sm:text-3xl md:text-4xl font-bold">3</div>
-                <div className="text-white/70 text-xs sm:text-sm">Expert Physicians</div>
+                <div className="text-xl sm:text-2xl md:text-3xl font-bold">3</div>
+                <div className="text-white/70 text-xs">Expert Physicians</div>
               </div>
             </motion.div>
           </div>
