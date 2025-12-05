@@ -66,7 +66,7 @@ export const doctors: Doctor[] = [
     role: "Co-Founder & Co-host",
     tagline: "Public Health Expert | AI in Medicine | Research & Data Analysis",
     bio: "Dr. Melat Mesfin is a medical and public health expert with extensive experience in research, data analysis, and emergency response. Skilled in evaluating complex medical data and ensuring the accuracy of health-related content, she is passionate about the intersection of AI and medicine. With experience in qualitative research, data validation, and evidence-based medical assessments, Dr. Melat brings a unique blend of clinical expertise and public health knowledge to እነሆ እኛ (Eneho Egna).",
-    image: null,
+    image: "/dr-melat.jpg",
     specialties: [
       "Public Health",
       "Reproductive Health",
@@ -247,7 +247,7 @@ export const doctors: Doctor[] = [
     role: "Co-Founder & Co-host",
     tagline: "Emergency & Dialysis Specialist | Telemedicine Expert | Health Advocate",
     bio: "Dr. Tigist Kahsay is an accomplished physician specializing in emergency medicine and dialysis care at Girum Hospital. With extensive experience in both emergency and non-emergency care, she has developed expertise in telemedicine, providing healthcare services to individuals with limited access to health facilities. As a co-founder of እነሆ እኛ (Eneho Egna), she combines her clinical expertise with a passion for health education, reaching thousands through digital platforms.",
-    image: null,
+    image: "/dr-tigist.jpg",
     specialties: [
       "Emergency Medicine",
       "Dialysis Care",
@@ -422,13 +422,13 @@ export const doctors: Doctor[] = [
     ]
   },
   {
-    id: "dr-birucketawit",
+    id: "dr-biruketawit",
     name: "Dr. Birucketawit Alebachew",
     credentials: "MD, BSc",
     role: "Co-Founder & Co-host",
     tagline: "Public Health Professional | Quality Control Expert | Project Management",
     bio: "Dr. Birucketawit Alebachew is a medical doctor and public health professional with strong experience in healthcare service delivery, quality control, academic support, and project management. Skilled in analyzing complex systems, coordinating teams, and improving processes, she is passionate about leveraging problem-solving, leadership, and project management expertise to drive innovation in health and technology. As a co-founder of እነሆ እኛ (Eneho Egna), she combines her clinical expertise with a commitment to health education and community wellness.",
-    image: null,
+    image: "/dr-birucketawit.jpg",
     specialties: [
       "Public Health",
       "Quality Control",

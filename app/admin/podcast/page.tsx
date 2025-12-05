@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { 
   Youtube, 
@@ -10,14 +10,45 @@ import {
   CheckCircle,
   AlertCircle,
   Copy,
-  Eye
+  Eye,
+  Play,
+  Instagram,
+  Send,
+  Facebook
 } from 'lucide-react'
+
+interface Video {
+  id: string
+  title: string
+  thumbnail: string
+  publishedAt: string
+  viewCount?: string
+}
 
 export default function PodcastPage() {
   const [channelId, setChannelId] = useState('')
   const [apiKey, setApiKey] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
+  const [videos, setVideos] = useState<Video[]>([])
+  const [loadingVideos, setLoadingVideos] = useState(true)
+
+  useEffect(() => {
+    async function fetchVideos() {
+      try {
+        const response = await fetch('/api/youtube')
+        if (response.ok) {
+          const data = await response.json()
+          setVideos(data.videos || [])
+        }
+      } catch (error) {
+        console.error('Failed to fetch videos:', error)
+      } finally {
+        setLoadingVideos(false)
+      }
+    }
+    fetchVideos()
+  }, [])
 
   const handleSave = async () => {
     setSaving(true)
@@ -29,10 +60,11 @@ export default function PodcastPage() {
   }
 
   const socialStats = [
-    { platform: 'YouTube', handle: '@Eneho_Hakim', followers: '21K+', color: 'bg-red-500', url: 'https://www.youtube.com/@Eneho_Hakim' },
-    { platform: 'TikTok', handle: '@eneho_egna', followers: '34K+', color: 'bg-black', url: 'https://www.tiktok.com/@eneho_egna' },
-    { platform: 'Telegram', handle: '@Eneho_Tena', followers: '5K+', color: 'bg-blue-500', url: 'https://t.me/Eneho_Tena' },
-    { platform: 'Facebook', handle: 'Eneho Egna', followers: '2K+', color: 'bg-blue-600', url: 'https://web.facebook.com/profile.php?id=61566388200183' },
+    { platform: 'YouTube', handle: '@Eneho_Hakim', followers: '21K+', color: 'bg-red-500', url: 'https://www.youtube.com/@Eneho_Hakim', icon: <Youtube className="w-5 h-5 text-white" /> },
+    { platform: 'TikTok', handle: '@eneho_egna', followers: '34K+', color: 'bg-black', url: 'https://www.tiktok.com/@eneho_egna', icon: <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg> },
+    { platform: 'Instagram', handle: '@eneho_egna_podcast', followers: '1K+', color: 'bg-gradient-to-br from-purple-600 to-pink-500', url: 'https://www.instagram.com/eneho_egna_podcast/', icon: <Instagram className="w-5 h-5 text-white" /> },
+    { platform: 'Telegram', handle: '@Eneho_Tena', followers: '5K+', color: 'bg-blue-500', url: 'https://t.me/Eneho_Tena', icon: <Send className="w-5 h-5 text-white" /> },
+    { platform: 'Facebook', handle: 'Eneho Egna', followers: '2K+', color: 'bg-blue-600', url: 'https://web.facebook.com/profile.php?id=61566388200183', icon: <Facebook className="w-5 h-5 text-white" /> },
   ]
 
   return (
@@ -58,7 +90,7 @@ export default function PodcastPage() {
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`${stat.color} p-2 rounded-lg`}>
-                <Youtube className="w-5 h-5 text-white" />
+                {stat.icon}
               </div>
               <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-primary-500 transition-colors" />
             </div>
@@ -180,25 +212,60 @@ export default function PodcastPage() {
             </a>
           </div>
 
-          {/* Sample Episode Cards */}
+          {/* Real Episode Cards from YouTube */}
           <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex gap-4 p-3 rounded-lg bg-gray-50">
-                <div className="w-24 h-16 bg-gray-200 rounded-lg flex items-center justify-center">
+            {loadingVideos ? (
+              <div className="text-center py-8 text-gray-500">
+                <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2" />
+                Loading episodes...
+              </div>
+            ) : videos.length > 0 ? (
+              videos.slice(0, 4).map((video) => (
+                <a 
+                  key={video.id} 
+                  href={`https://www.youtube.com/watch?v=${video.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex gap-4 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors group"
+                >
+                  <div className="w-28 h-20 bg-gray-200 rounded-lg overflow-hidden relative flex-shrink-0">
+                    <img 
+                      src={video.thumbnail} 
+                      alt={video.title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Play className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-gray-900 text-sm line-clamp-2">{video.title}</h4>
+                    <p className="text-xs text-gray-400 mt-2">
+                      {new Date(video.publishedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      })}
+                    </p>
+                  </div>
+                </a>
+              ))
+            ) : (
+              <div className="text-center py-8">
+                <div className="w-12 h-12 mx-auto mb-3 rounded-xl bg-gray-100 flex items-center justify-center">
                   <Youtube className="w-6 h-6 text-gray-400" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 text-sm truncate">Episode Title {i}</h4>
-                  <p className="text-xs text-gray-500 mt-1">Sample episode description...</p>
-                  <p className="text-xs text-gray-400 mt-1">Nov {20 + i}, 2024</p>
-                </div>
+                <p className="text-gray-500">No episodes loaded</p>
+                <p className="text-xs text-gray-400 mt-1">Add YouTube API key to display episodes</p>
               </div>
-            ))}
+            )}
           </div>
 
-          <p className="text-sm text-gray-500 mt-4 text-center">
-            Episodes will auto-update from your YouTube channel
-          </p>
+          {videos.length > 0 && (
+            <p className="text-sm text-gray-500 mt-4 text-center">
+              Showing {Math.min(videos.length, 4)} of {videos.length} episodes
+            </p>
+          )}
         </motion.div>
       </div>
 

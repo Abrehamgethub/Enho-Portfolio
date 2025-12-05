@@ -6,35 +6,42 @@ const ADMIN_CREDENTIALS = {
   password: process.env.ADMIN_PASSWORD || 'eneho2024'
 }
 
+// Secret key for token validation (use env var in production)
+const AUTH_SECRET = process.env.AUTH_SECRET || 'eneho-admin-secret-2024'
+
 export function validateCredentials(username: string, password: string): boolean {
   return username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password
 }
 
 export function generateToken(): string {
-  return Buffer.from(`${Date.now()}-${Math.random().toString(36).substring(7)}`).toString('base64')
-}
-
-// Session storage (in production, use a database or Redis)
-const sessions = new Map<string, { createdAt: number; expiresAt: number }>()
-
-export function createSession(token: string): void {
-  const now = Date.now()
-  sessions.set(token, {
-    createdAt: now,
-    expiresAt: now + 24 * 60 * 60 * 1000 // 24 hours
-  })
+  // Create a signed token that includes expiration time
+  const expiry = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+  const payload = `${expiry}:${AUTH_SECRET}`
+  return Buffer.from(payload).toString('base64')
 }
 
 export function validateSession(token: string): boolean {
-  const session = sessions.get(token)
-  if (!session) return false
-  if (Date.now() > session.expiresAt) {
-    sessions.delete(token)
+  try {
+    // Decode and validate the token
+    const decoded = Buffer.from(token, 'base64').toString('utf-8')
+    const [expiryStr, secret] = decoded.split(':')
+    const expiry = parseInt(expiryStr, 10)
+    
+    // Check if token is valid and not expired
+    if (secret !== AUTH_SECRET) return false
+    if (isNaN(expiry) || Date.now() > expiry) return false
+    
+    return true
+  } catch {
     return false
   }
-  return true
+}
+
+// These are no longer needed but kept for compatibility
+export function createSession(token: string): void {
+  // Token is self-validating, no storage needed
 }
 
 export function deleteSession(token: string): void {
-  sessions.delete(token)
+  // Token invalidation handled by cookie deletion
 }

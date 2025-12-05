@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { addMessage } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,13 +14,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Here you can integrate with:
-    // 1. Email service (Nodemailer, SendGrid, Resend)
-    // 2. Database (save to MongoDB, Supabase, etc.)
-    // 3. Notification service (Slack, Telegram)
-
-    // For now, log the contact submission
-    console.log('New contact submission:', { name, email, subject, message })
+    // Save to database
+    const savedMessage = await addMessage({
+      name,
+      email,
+      subject: subject || 'No Subject',
+      message
+    })
+    
+    console.log('New contact submission saved:', savedMessage.id)
 
     // Example: Send to Telegram (if BOT_TOKEN and CHAT_ID are set)
     const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN

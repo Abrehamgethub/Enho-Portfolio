@@ -7,10 +7,11 @@ import { motion } from 'framer-motion'
 interface Video {
   id: string
   title: string
-  description: string
+  description?: string
   thumbnail: string
-  publishedAt: string
-  url: string
+  publishedAt?: string
+  url?: string
+  category?: string
 }
 
 export default function PodcastEpisodes() {
@@ -20,6 +21,7 @@ export default function PodcastEpisodes() {
   useEffect(() => {
     async function fetchVideos() {
       try {
+        // Fetch directly from YouTube channel
         const response = await fetch('/api/youtube')
         const data = await response.json()
         setVideos(data.videos || [])
@@ -42,8 +44,8 @@ export default function PodcastEpisodes() {
   }
 
   return (
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {videos.slice(0, 6).map((video, index) => (
+    <div className="grid md:grid-cols-3 gap-6">
+      {videos.slice(0, 3).map((video, index) => (
         <motion.a
           key={video.id}
           href={video.url}
@@ -85,12 +87,18 @@ export default function PodcastEpisodes() {
             <h3 className="font-bold text-gray-900 line-clamp-2 group-hover:text-primary-600 transition-colors">
               {video.title}
             </h3>
-            <p className="text-gray-600 text-sm mt-2 line-clamp-2">
-              {video.description}
-            </p>
+            {video.description && (
+              <p className="text-gray-600 text-sm mt-2 line-clamp-2">
+                {video.description}
+              </p>
+            )}
             <div className="flex items-center gap-2 mt-3 text-gray-500 text-xs">
-              <Calendar className="w-4 h-4" />
-              <span>{formatDate(video.publishedAt)}</span>
+              {video.publishedAt ? (
+                <>
+                  <Calendar className="w-4 h-4" />
+                  <span>{formatDate(video.publishedAt)}</span>
+                </>
+              ) : null}
               <ExternalLink className="w-4 h-4 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
           </div>

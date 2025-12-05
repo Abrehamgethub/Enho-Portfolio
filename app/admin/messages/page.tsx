@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   MessageSquare, 
@@ -12,55 +12,47 @@ import {
   Mail,
   Calendar,
   User,
-  ChevronDown
+  ChevronDown,
+  Inbox,
+  RefreshCw
 } from 'lucide-react'
 
-// Sample messages data (in production, fetch from database)
-const initialMessages = [
-  { 
-    id: 1, 
-    name: 'Abebe Kebede', 
-    email: 'abebe@example.com', 
-    subject: 'Collaboration Request', 
-    message: 'Hello, I am interested in collaborating with Eneho Egna for a health awareness campaign in our community. Would love to discuss this further.',
-    date: '2024-11-30T10:30:00',
-    read: false 
-  },
-  { 
-    id: 2, 
-    name: 'Sara Hailu', 
-    email: 'sara@example.com', 
-    subject: 'Speaking Invitation', 
-    message: 'We are organizing a health summit in Addis Ababa next month and would be honored to have one of your doctors as a keynote speaker.',
-    date: '2024-11-30T08:15:00',
-    read: true 
-  },
-  { 
-    id: 3, 
-    name: 'Dawit Mekonnen', 
-    email: 'dawit@example.com', 
-    subject: 'General Inquiry', 
-    message: 'I have been following your YouTube channel and would like to know more about your upcoming episodes and how I can support your work.',
-    date: '2024-11-29T14:45:00',
-    read: true 
-  },
-  { 
-    id: 4, 
-    name: 'Tigist Alemayehu', 
-    email: 'tigist@example.com', 
-    subject: 'Partnership Proposal', 
-    message: 'Our organization is looking to partner with health educators. We believe Eneho Egna would be a perfect fit for our community health initiative.',
-    date: '2024-11-28T09:00:00',
-    read: false 
-  },
-]
+interface Message {
+  id: string
+  name: string
+  email: string
+  subject: string
+  message: string
+  date: string
+  read: boolean
+}
 
 export default function MessagesPage() {
-  const [messages, setMessages] = useState(initialMessages)
+  const [messages, setMessages] = useState<Message[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState<'all' | 'unread' | 'read'>('all')
-  const [selectedMessage, setSelectedMessage] = useState<typeof initialMessages[0] | null>(null)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<number | null>(null)
+  const [selectedMessage, setSelectedMessage] = useState<Message | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+
+  const fetchMessages = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/messages')
+      if (response.ok) {
+        const data = await response.json()
+        setMessages(data.messages)
+      }
+    } catch (error) {
+      console.error('Failed to fetch messages:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchMessages()
+  }, [])
 
   const filteredMessages = messages.filter(msg => {
     const matchesSearch = msg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,16 +64,30 @@ export default function MessagesPage() {
     return matchesSearch && matchesFilter
   })
 
-  const markAsRead = (id: number) => {
-    setMessages(messages.map(msg => 
-      msg.id === id ? { ...msg, read: true } : msg
-    ))
+  const markAsRead = async (id: string) => {
+    try {
+      await fetch(`/api/messages/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ markAsRead: true })
+      })
+      setMessages(messages.map(msg => 
+        msg.id === id ? { ...msg, read: true } : msg
+      ))
+    } catch (error) {
+      console.error('Failed to mark as read:', error)
+    }
   }
 
-  const deleteMessage = (id: number) => {
-    setMessages(messages.filter(msg => msg.id !== id))
-    setShowDeleteConfirm(null)
-    if (selectedMessage?.id === id) setSelectedMessage(null)
+  const deleteMessage = async (id: string) => {
+    try {
+      await fetch(`/api/messages/${id}`, { method: 'DELETE' })
+      setMessages(messages.filter(msg => msg.id !== id))
+      setShowDeleteConfirm(null)
+      if (selectedMessage?.id === id) setSelectedMessage(null)
+    } catch (error) {
+      console.error('Failed to delete message:', error)
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -303,7 +309,7 @@ export default function MessagesPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => deleteMessage(showDeleteConfirm)}
+                  onClick={() => showDeleteConfirm && deleteMessage(showDeleteConfirm)}
                   className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                 >
                   Delete

@@ -24,7 +24,7 @@ const initialTeam = [
     specialties: ['Public Health', 'AI in Medicine', 'Research', 'Reproductive Health'],
     education: ['MD - Yekatit 12 Hospital Medical College', 'MPH - Addis Ababa University', 'BSc Public Health - University of Gondar'],
     experience: 'EPHI COVID-19 Response, World Bank GBV Project, AMREF Research',
-    image: null
+    image: '/dr-melat.jpg'
   },
   {
     id: 'dr-tigist',
@@ -44,7 +44,7 @@ const initialTeam = [
     specialties: ['Public Health', 'Quality Control', 'Project Management', 'Healthcare Delivery'],
     education: ['MD - Yirgalem Hospital Medical College', 'BSc Public Health - University of Gondar'],
     experience: 'Kotebe Health Center, Pioneer College, FMHACA Quality Control',
-    image: null
+    image: '/dr-birucketawit.jpg'
   }
 ]
 
@@ -64,7 +64,7 @@ export default function TeamPage() {
     specialties: [],
     education: [],
     experience: '',
-    image: null
+    image: ''
   }
 
   const [formData, setFormData] = useState<TeamMember>(emptyMember)
@@ -143,7 +143,7 @@ export default function TeamPage() {
             {/* Avatar */}
             <div className="h-32 bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
               {member.image ? (
-                <img src={member.image} alt={member.name} className="w-24 h-24 rounded-full object-cover border-4 border-white shadow-lg" />
+                <img src={member.image} alt={member.name} className="w-24 h-24 rounded-full object-cover object-top border-4 border-white shadow-lg bg-white" />
               ) : (
                 <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center text-3xl font-bold text-white">
                   {member.name.split(' ')[1]?.[0] || 'D'}
@@ -303,7 +303,7 @@ export default function TeamPage() {
                   <input
                     type="text"
                     value={formData.image || ''}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value || null })}
+                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
                     placeholder="/dr-name.jpg"
                   />
