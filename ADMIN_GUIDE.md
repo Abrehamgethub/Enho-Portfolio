@@ -3,146 +3,237 @@
 
 ---
 
-## 🔐 How to Login
+## How to Login
 
-1. Go to your website and add `/admin` to the URL
-   - Example: `https://eneho-doctors.vercel.app/admin`
-2. Enter your **Username** and **Password**
-3. Click **Login**
+1. Open your website and add `/admin` to the end of the URL.
+2. Enter your admin **Username** and **Password**.
+3. Click **Sign In**.
 
----
-
-## 📋 Admin Dashboard Overview
-
-After logging in, you'll see the admin dashboard with these sections:
-
-| Section | What It Does |
-|---------|--------------|
-| **Dashboard** | Overview of your content |
-| **Team** | Manage team members |
-| **Guests** | Manage previous guests |
-| **Partners** | Manage sponsors & partners |
-| **Podcast** | Manage podcast episodes |
-| **Messages** | View contact form messages |
-| **Settings** | Website settings |
+If you are logged in successfully, you will be redirected to the admin dashboard.
 
 ---
 
-## 👥 Managing Team Members
+## Admin Dashboard Overview
 
-### Add a New Team Member
-1. Click **Team** in the sidebar
-2. Click **Add Team Member** button
-3. Fill in the details:
-   - **Name (English)**: Full name in English
-   - **Name (Amharic)**: ስም በአማርኛ
-   - **Role**: Their position (e.g., "Host", "Producer")
-   - **Bio**: Short description about them
-   - **Photo URL**: Link to their photo
-   - **Social Links**: YouTube, Facebook, etc.
-4. Click **Save**
+The admin dashboard is used to manage the content that appears on your website.
 
-### Edit a Team Member
-1. Find the team member card
-2. Click the **Edit** (pencil) icon
-3. Make your changes
-4. Click **Update**
+Main sections (in the left sidebar):
 
-### Delete a Team Member
-1. Find the team member card
-2. Click the **Delete** (trash) icon
-3. Confirm deletion
+| Section | URL | What it does |
+|---|---|---|
+| **Dashboard** | `/admin` | Shows quick stats and recent messages |
+| **Messages** | `/admin/messages` | View contact form submissions and mark them as read |
+| **Guests** | `/admin/guests` | Add/edit guest profiles and link each guest to a YouTube episode |
+| **Partners** | `/admin/sponsors` | Add/edit sponsors/partners and program details + photo gallery |
+| **Podcast** | `/admin/podcast` | Shows social links + YouTube setup instructions + episode preview |
+| **Settings** | `/admin/settings` | Shows site settings UI and a checklist of environment variables |
+
+Additional pages (available by URL, even if not shown in the sidebar):
+
+| Section | URL | What it does |
+|---|---|---|
+| **Team** | `/admin/team` | Manage team member cards (doctors) |
+| **Episodes** | `/admin/episodes` | Choose which YouTube videos appear as “Latest Episodes” on the website |
+| **Updates** | `/admin/updates` | Post short “News & Updates” messages shown on the homepage |
 
 ---
 
-## 🎤 Managing Guests
+## Important: What Gets Saved Permanently
 
-Guests are doctors, experts, or personalities who appeared on your show.
+Some admin content is saved in MongoDB (permanent), and some is “in-memory” (temporary).
 
-### Add a New Guest
-1. Click **Guests** in the sidebar
-2. Click **Add Guest** button
-3. Fill in the details:
+To have permanent saving, you must set `MONGODB_URI` in your hosting environment (for example in Vercel).
 
-| Field | Description | Example |
-|-------|-------------|---------|
-| **Name (English)** | Guest's name | Dr. Abebe Kebede |
-| **Name (Amharic)** | ስም በአማርኛ | ዶ/ር አበበ ከበደ |
-| **Title** | Professional title | Dr., Prof., Mr. |
-| **Profession** | Their specialty | Cardiologist |
-| **Photo URL** | Link to their photo | https://... |
-| **Episode URL** | YouTube link of their episode | https://youtube.com/watch?v=... |
-| **Episode Date** | When they appeared | Select date |
-| **Program Name** | Name of the program | Health Talk |
-| **Description** | About the guest | Brief bio... |
-| **Gallery Photos** | Additional photos | Add photo URLs |
-| **Featured** | Show prominently | ✓ Check if featured |
-
-4. Click **Save Guest**
-
-### 💡 Tips for Guests
-- **Episode URL**: Adding a YouTube link will automatically show the video thumbnail as the guest's image
-- **Gallery Photos**: Add multiple photos to show in the expanded view
-- **Featured Guests**: Check "Featured" to highlight important guests
+| Content | Where it is stored |
+|---|---|
+| **Messages** | MongoDB if configured, otherwise temporary in-memory fallback |
+| **Guests** | MongoDB |
+| **Partners** | MongoDB |
+| **Episodes (Featured Videos)** | MongoDB |
+| **Updates** | MongoDB |
+| **Team** | Temporary in-memory (resets on server restart/redeploy) |
 
 ---
 
-## 🤝 Managing Partners & Sponsors
+## Managing Team Members (Doctors)
 
-Partners are organizations that sponsored programs or collaborated with you.
+URL: `/admin/team`
 
-### Add a New Partner
-1. Click **Partners/Sponsors** in the sidebar
-2. Click **Add Sponsor** button
-3. Fill in the details:
+You can add/edit/delete team members shown on the website.
 
-| Field | Description |
-|-------|-------------|
-| **Name** | Organization name |
-| **Name (Amharic)** | ስም በአማርኛ |
-| **Logo URL** | Link to their logo |
-| **Program Type** | Holiday / Charity / Special / Regular |
-| **Program Name** | e.g., "Christmas Special 2024" |
-| **Episode URL** | YouTube link (shows as thumbnail) |
-| **Description** | About the partnership |
-| **Website** | Partner's website link |
-| **Photos** | Gallery of program photos |
+Fields you can manage:
 
-4. Click **Save**
+- **Full Name**
+- **Credentials**
+- **Role**
+- **Specialties** (comma-separated)
+- **Education** (one per line)
+- **Experience**
+- **Profile Image URL** (recommended: put the image in `/public` and use a path like `/dr-name.jpg`)
+- **Social Media Links** (LinkedIn, X/Twitter, Facebook, Instagram, Website)
 
-### Program Types Explained
-- **Holiday** 🎄 - Christmas, Easter, New Year programs
-- **Charity** ❤️ - Charitable events and donations
-- **Special** ✨ - Special events and occasions
-- **Regular** 📺 - Regular sponsorships
+Note: Team changes are currently stored temporarily (in-memory). If you redeploy or restart the server, these changes may reset.
 
 ---
 
-## 🎙️ Managing Podcast Episodes
+## Managing Guests
 
-Episodes are automatically fetched from your YouTube channel. You can also add them manually.
+URL: `/admin/guests`
 
-### Add Episode Manually
-1. Click **Podcast** in the sidebar
-2. Click **Add Episode**
-3. Enter the YouTube URL
-4. Fill in details if needed
-5. Click **Save**
+Guests are doctors/experts who appeared on your show.
+
+Required fields:
+
+- **Name (English)**
+- **Profession**
+- **Description**
+- **Episode URL (YouTube)**
+
+Optional fields:
+
+- **Name (Amharic)**
+- **Title** (Dr., Prof., etc.)
+- **Episode Date**
+- **Program Name**
+- **Photo URL** (if empty, the system can use the YouTube thumbnail)
+- **Gallery Photos** (multiple URLs)
+- **Featured Guest** (to highlight)
+
+Tips:
+
+- If **Photo URL** is empty, the guest card will use the YouTube thumbnail from **Episode URL**.
+- Use **Gallery Photos** for behind-the-scenes or additional images.
 
 ---
 
-## 📬 Viewing Messages
+## Managing Partners (Sponsors)
 
-People who contact you through the website appear here.
+URL: `/admin/sponsors`
 
-1. Click **Messages** in the sidebar
-2. View all contact form submissions
-3. Click on a message to see full details
-4. Mark as read or delete
+Partners are organizations that sponsored or collaborated with your programs.
+
+Common fields:
+
+- **Organization Name**
+- **Program Type** (Holiday / Regular / Charity / Special)
+- **Program Name**
+- **Logo URL**
+- **Description**
+
+Optional fields:
+
+- **Name (Amharic)**
+- **Website**
+- **Program Date**
+- **Episode URL** (YouTube link related to the program)
+- **Program Photos (Gallery)**
+- **Featured Partner**
 
 ---
 
-## 🖼️ How to Get Image URLs
+## Managing Episodes (Latest Episodes on the Website)
+
+URL: `/admin/episodes`
+
+This page lets you control which videos appear on the site in “Latest Episodes”.
+
+You can:
+
+- Add a video by pasting a YouTube URL
+- Add videos from the “Your YouTube Videos” list
+- Choose a **Category**
+- Toggle a video **Show/Hide** (active)
+- Remove a video from the featured list
+
+Notes:
+
+- Guest episodes are managed in **Guests** (by setting each guest’s **Episode URL**).
+- Holiday or sponsor program videos are managed in **Partners**.
+
+---
+
+## News & Updates
+
+URL: `/admin/updates`
+
+Use this page to post short update messages that appear on the website.
+
+You can:
+
+- Select an emoji
+- Write an update (up to 150 characters)
+- Post it
+- Delete older updates
+
+---
+
+## Viewing Messages (Contact Form)
+
+URL: `/admin/messages`
+
+People who contact you through the website will appear here.
+
+You can:
+
+- Search by name/email/subject
+- Filter by read/unread
+- Click a message to view the full details
+- Reply via email
+- Delete messages
+
+---
+
+## Podcast & YouTube Integration
+
+URL: `/admin/podcast`
+
+This page provides:
+
+- Social channel links
+- YouTube setup instructions
+- A preview list of YouTube episodes
+
+Important:
+
+- The “Save Configuration” button is currently a UI-only action.
+- The website reads YouTube settings from environment variables:
+  - `YOUTUBE_API_KEY`
+  - `YOUTUBE_CHANNEL_ID`
+
+If `YOUTUBE_API_KEY` is not set, the site falls back to the YouTube RSS feed.
+
+---
+
+## Settings
+
+URL: `/admin/settings`
+
+This page shows a settings UI and a checklist of environment variables.
+
+Important:
+
+- The “Save Changes” button is currently a UI-only action.
+- To change admin login credentials, update environment variables:
+  - `ADMIN_USERNAME`
+  - `ADMIN_PASSWORD`
+  - `AUTH_SECRET`
+
+Environment variables checklist (recommended for production):
+
+| Variable | Required | Purpose |
+|---|---:|---|
+| `MONGODB_URI` | Yes | Stores guests/partners/episodes/updates/messages permanently |
+| `ADMIN_USERNAME` | Yes | Admin login username |
+| `ADMIN_PASSWORD` | Yes | Admin login password |
+| `AUTH_SECRET` | Yes | Used to sign/validate admin session token |
+| `YOUTUBE_CHANNEL_ID` | Recommended | Used for YouTube RSS fallback and YouTube API queries |
+| `YOUTUBE_API_KEY` | Optional | If set, site uses YouTube Data API v3 (otherwise RSS fallback) |
+| `TELEGRAM_BOT_TOKEN` | Optional | Sends Telegram notifications on new contact submissions |
+| `TELEGRAM_CHAT_ID` | Optional | Telegram chat destination for notifications |
+
+---
+
+## How to Get Image URLs
 
 Since the admin uses image URLs, here's how to get them:
 
@@ -218,6 +309,19 @@ Since the admin uses image URLs, here's how to get them:
 - Clear browser cache
 - Wait a few seconds and try again
 
+### Q: Guests/Partners/Episodes/Updates are not saving?
+**A:** This usually means MongoDB is not connected.
+
+- Ensure `MONGODB_URI` is set in Vercel (Project Settings → Environment Variables)
+- Redeploy after setting environment variables
+
+### Q: I can login locally but not on Vercel?
+**A:** Make sure these are set in Vercel:
+
+- `ADMIN_USERNAME`
+- `ADMIN_PASSWORD`
+- `AUTH_SECRET`
+
 ### Q: Forgot admin password?
 **A:** Contact your website administrator to reset it.
 
@@ -232,4 +336,5 @@ If you have any issues:
 
 ---
 
-*Last Updated: December 2024*
+*Last Updated: December 2025*
+

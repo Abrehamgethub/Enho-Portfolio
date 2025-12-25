@@ -21,8 +21,17 @@ export interface TeamMember {
   role: string
   tagline: string
   specialties: string[]
+  education?: string[]
+  experience?: string
   image: string | null
   color: string
+  socialLinks?: {
+    linkedin?: string
+    twitter?: string
+    facebook?: string
+    instagram?: string
+    website?: string
+  }
 }
 
 // In-memory fallback storage
@@ -35,8 +44,9 @@ let teamMembers: TeamMember[] = [
     role: 'The Researcher',
     tagline: 'Bringing AI and public health together',
     specialties: ['Public Health', 'AI in Medicine', 'Research'],
-    image: null,
-    color: 'from-violet-500 to-purple-600'
+    image: '/dr-melat.jpg',
+    color: 'from-violet-500 to-purple-600',
+    socialLinks: {}
   },
   {
     id: 'dr-tigist',
@@ -46,17 +56,19 @@ let teamMembers: TeamMember[] = [
     tagline: 'From ER to community health champion',
     specialties: ['Emergency Medicine', 'Dialysis', 'Telemedicine'],
     image: '/dr-tigist.jpg',
-    color: 'from-rose-500 to-pink-600'
+    color: 'from-rose-500 to-pink-600',
+    socialLinks: {}
   },
   {
-    id: 'dr-birucketawit',
+    id: 'dr-biruketawit',
     name: 'Dr. Birucketawit Alebachew',
     credentials: 'MD, BSc',
     role: 'The Educator',
     tagline: 'Making health knowledge accessible',
     specialties: ['Public Health', 'Quality Control', 'Training'],
-    image: null,
-    color: 'from-teal-500 to-cyan-600'
+    image: '/dr-birucketawit.jpg',
+    color: 'from-teal-500 to-cyan-600',
+    socialLinks: {}
   }
 ]
 

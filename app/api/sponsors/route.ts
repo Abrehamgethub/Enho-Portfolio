@@ -41,6 +41,7 @@ export async function POST(request: NextRequest) {
       programType: body.programType || 'regular',
       programName: body.programName,
       programDate: body.programDate,
+      episodeUrl: body.episodeUrl,
       photos: body.photos || [],
       featured: body.featured || false,
       order: body.order || 0
