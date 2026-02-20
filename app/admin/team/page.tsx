@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Users, 
@@ -24,7 +24,14 @@ const initialTeam = [
     specialties: ['Public Health', 'AI in Medicine', 'Research', 'Reproductive Health'],
     education: ['MD - Yekatit 12 Hospital Medical College', 'MPH - Addis Ababa University', 'BSc Public Health - University of Gondar'],
     experience: 'EPHI COVID-19 Response, World Bank GBV Project, AMREF Research',
-    image: '/dr-melat.jpg'
+    image: '/dr-melat.jpg',
+    socialLinks: {
+      linkedin: '',
+      twitter: '',
+      facebook: '',
+      instagram: '',
+      website: ''
+    }
   },
   {
     id: 'dr-tigist',
@@ -34,27 +41,87 @@ const initialTeam = [
     specialties: ['Emergency Medicine', 'Dialysis Care', 'Telemedicine', 'TB/HIV Care'],
     education: ['MD - Jimma University Medical College'],
     experience: 'Girum Hospital (ER & Dialysis), St Urael Internal Medicine Specialty Clinic',
-    image: '/dr-tigist.jpg'
+    image: '/dr-tigist.jpg',
+    socialLinks: {
+      linkedin: '',
+      twitter: '',
+      facebook: '',
+      instagram: '',
+      website: ''
+    }
   },
   {
-    id: 'dr-birucketawit',
+    id: 'dr-biruketawit',
     name: 'Dr. Birucketawit Alebachew',
     credentials: 'MD, BSc',
     role: 'Co-Founder & Co-host',
     specialties: ['Public Health', 'Quality Control', 'Project Management', 'Healthcare Delivery'],
     education: ['MD - Yirgalem Hospital Medical College', 'BSc Public Health - University of Gondar'],
     experience: 'Kotebe Health Center, Pioneer College, FMHACA Quality Control',
-    image: '/dr-birucketawit.jpg'
+    image: '/dr-birucketawit.jpg',
+    socialLinks: {
+      linkedin: '',
+      twitter: '',
+      facebook: '',
+      instagram: '',
+      website: ''
+    }
   }
 ]
 
-type TeamMember = typeof initialTeam[0]
+type SocialLinks = {
+  linkedin?: string
+  twitter?: string
+  facebook?: string
+  instagram?: string
+  website?: string
+}
+
+type TeamMember = {
+  id: string
+  name: string
+  credentials: string
+  role: string
+  specialties: string[]
+  education: string[]
+  experience: string
+  image: string
+  socialLinks?: SocialLinks
+}
 
 export default function TeamPage() {
   const [team, setTeam] = useState(initialTeam)
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
+
+  useEffect(() => {
+    async function fetchTeam() {
+      try {
+        const response = await fetch('/api/team')
+        const data = await response.json()
+        if (Array.isArray(data.team)) {
+          setTeam(
+            data.team.map((m: any) => ({
+              id: m.id,
+              name: m.name || '',
+              credentials: m.credentials || '',
+              role: m.role || '',
+              specialties: Array.isArray(m.specialties) ? m.specialties : [],
+              education: Array.isArray(m.education) ? m.education : [],
+              experience: m.experience || '',
+              image: m.image || '',
+              socialLinks: m.socialLinks || {}
+            }))
+          )
+        }
+      } catch {
+        // Keep fallback initialTeam
+      }
+    }
+
+    fetchTeam()
+  }, [])
 
   const emptyMember: TeamMember = {
     id: '',
@@ -64,7 +131,14 @@ export default function TeamPage() {
     specialties: [],
     education: [],
     experience: '',
-    image: ''
+    image: '',
+    socialLinks: {
+      linkedin: '',
+      twitter: '',
+      facebook: '',
+      instagram: '',
+      website: ''
+    }
   }
 
   const [formData, setFormData] = useState<TeamMember>(emptyMember)
@@ -73,13 +147,16 @@ export default function TeamPage() {
 
   const openEditor = (member?: TeamMember) => {
     if (member) {
-      setFormData(member)
+      setFormData({
+        ...member,
+        socialLinks: member.socialLinks || {}
+      })
       setSpecialtiesInput(member.specialties.join(', '))
       setEducationInput(member.education.join('\n'))
       setEditingMember(member)
       setIsAdding(false)
     } else {
-      setFormData({ ...emptyMember, id: `dr-${Date.now()}` })
+      setFormData({ ...emptyMember, id: '' })
       setSpecialtiesInput('')
       setEducationInput('')
       setEditingMember(null)
@@ -93,24 +170,85 @@ export default function TeamPage() {
     setFormData(emptyMember)
   }
 
-  const saveMember = () => {
+  const saveMember = async () => {
     const updatedMember = {
       ...formData,
       specialties: specialtiesInput.split(',').map(s => s.trim()).filter(Boolean),
       education: educationInput.split('\n').map(s => s.trim()).filter(Boolean)
     }
 
-    if (isAdding) {
-      setTeam([...team, updatedMember])
-    } else {
-      setTeam(team.map(m => m.id === updatedMember.id ? updatedMember : m))
+    try {
+      if (isAdding) {
+        const response = await fetch('/api/team', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: updatedMember.name,
+            credentials: updatedMember.credentials,
+            role: updatedMember.role,
+            tagline: '',
+            specialties: updatedMember.specialties,
+            education: updatedMember.education,
+            experience: updatedMember.experience,
+            image: updatedMember.image,
+            color: 'from-primary-500 to-primary-600',
+            socialLinks: updatedMember.socialLinks || {}
+          })
+        })
+
+        const data = await response.json()
+        if (response.ok && data.member) {
+          setTeam([...team, {
+            id: data.member.id,
+            name: data.member.name || '',
+            credentials: data.member.credentials || '',
+            role: data.member.role || '',
+            specialties: data.member.specialties || [],
+            education: data.member.education || [],
+            experience: data.member.experience || '',
+            image: data.member.image || '',
+            socialLinks: data.member.socialLinks || {}
+          }])
+        }
+      } else if (editingMember) {
+        const response = await fetch(`/api/team/${editingMember.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: updatedMember.name,
+            credentials: updatedMember.credentials,
+            role: updatedMember.role,
+            specialties: updatedMember.specialties,
+            education: updatedMember.education,
+            experience: updatedMember.experience,
+            image: updatedMember.image,
+            socialLinks: updatedMember.socialLinks || {}
+          })
+        })
+
+        const data = await response.json()
+        if (response.ok && data.member) {
+          setTeam(team.map(m => m.id === editingMember.id ? {
+            ...m,
+            ...data.member,
+            education: data.member.education || [],
+            specialties: data.member.specialties || [],
+            socialLinks: data.member.socialLinks || {}
+          } : m))
+        }
+      }
+    } finally {
+      closeEditor()
     }
-    closeEditor()
   }
 
-  const deleteMember = (id: string) => {
-    setTeam(team.filter(m => m.id !== id))
-    setShowDeleteConfirm(null)
+  const deleteMember = async (id: string) => {
+    try {
+      await fetch(`/api/team/${id}`, { method: 'DELETE' })
+      setTeam(team.filter(m => m.id !== id))
+    } finally {
+      setShowDeleteConfirm(null)
+    }
   }
 
   return (
@@ -308,6 +446,78 @@ export default function TeamPage() {
                     placeholder="/dr-name.jpg"
                   />
                   <p className="text-xs text-gray-500 mt-1">Place image in /public folder and enter path like /dr-name.jpg</p>
+                </div>
+
+                {/* Social Media Links */}
+                <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                  <h3 className="text-sm font-semibold text-gray-800 mb-4">Social Media Links</h3>
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">LinkedIn</label>
+                      <input
+                        type="url"
+                        value={formData.socialLinks?.linkedin || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          socialLinks: { ...formData.socialLinks, linkedin: e.target.value }
+                        })}
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="https://linkedin.com/in/..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Twitter/X</label>
+                      <input
+                        type="url"
+                        value={formData.socialLinks?.twitter || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          socialLinks: { ...formData.socialLinks, twitter: e.target.value }
+                        })}
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="https://x.com/..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Facebook</label>
+                      <input
+                        type="url"
+                        value={formData.socialLinks?.facebook || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          socialLinks: { ...formData.socialLinks, facebook: e.target.value }
+                        })}
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="https://facebook.com/..."
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Instagram</label>
+                      <input
+                        type="url"
+                        value={formData.socialLinks?.instagram || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          socialLinks: { ...formData.socialLinks, instagram: e.target.value }
+                        })}
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="https://instagram.com/..."
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Website</label>
+                      <input
+                        type="url"
+                        value={formData.socialLinks?.website || ''}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          socialLinks: { ...formData.socialLinks, website: e.target.value }
+                        })}
+                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="https://example.com"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

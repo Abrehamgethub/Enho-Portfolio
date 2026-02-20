@@ -1,5 +1,53 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { addMessage } from '@/lib/db'
+import nodemailer from 'nodemailer'
+
+// Email notification function
+async function sendEmailNotification({ name, email, subject, message }: {
+  name: string
+  email: string
+  subject: string
+  message: string
+}) {
+  try {
+    const transporter = nodemailer.createTransporter({
+      host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.EMAIL_PORT || '587'),
+      secure: false,
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    })
+
+    const emailContent = `
+New Contact Form Submission from Eneho Egna Website
+
+Name: ${name}
+Email: ${email}
+Subject: ${subject}
+
+Message:
+${message}
+
+---
+This message was sent from the Eneho Egna website contact form.
+    `.trim()
+
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
+      to: process.env.EMAIL_TO || process.env.EMAIL_USER,
+      subject: `New Contact: ${subject}`,
+      text: emailContent,
+      html: emailContent.replace(/\n/g, '<br>'),
+    })
+
+    console.log('Email notification sent successfully')
+  } catch (error) {
+    console.error('Failed to send email notification:', error)
+    // Don't fail the request if email fails
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,6 +96,9 @@ export async function POST(request: NextRequest) {
         })
       })
     }
+
+    // Send email notification
+    await sendEmailNotification({ name, email, subject: subject || 'No Subject', message })
 
     return NextResponse.json({ 
       success: true, 

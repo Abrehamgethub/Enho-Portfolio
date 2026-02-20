@@ -13,14 +13,32 @@ interface Guest {
   nameAmharic?: string
   title: string
   profession: string
-  photo: string
+  photo?: string
   photos?: string[]
   description: string
-  episodeUrl?: string
+  episodeUrl: string
   episodeDate?: string
   programName?: string
   featured: boolean
   order: number
+}
+
+function getYouTubeVideoId(url: string): string | null {
+  if (!url) return null
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
+  const match = url.match(regExp)
+  if (match && match[2].length === 11) {
+    return match[2]
+  }
+  return null
+}
+
+function getYouTubeThumbnail(url: string): string | null {
+  const videoId = getYouTubeVideoId(url)
+  if (videoId) {
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
+  }
+  return null
 }
 
 export default function GuestsPage() {
@@ -122,10 +140,10 @@ export default function GuestsPage() {
       nameAmharic: guest.nameAmharic || '',
       title: guest.title,
       profession: guest.profession,
-      photo: guest.photo,
+      photo: guest.photo || '',
       photos: guest.photos || [],
       description: guest.description,
-      episodeUrl: guest.episodeUrl || '',
+      episodeUrl: guest.episodeUrl,
       episodeDate: guest.episodeDate ? guest.episodeDate.split('T')[0] : '',
       programName: guest.programName || '',
       featured: guest.featured
@@ -265,8 +283,8 @@ export default function GuestsPage() {
                   onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
                   placeholder="https://example.com/photo.jpg"
-                  required
                 />
+                <p className="text-xs text-gray-500 mt-1">Optional. If empty, the episode thumbnail will be used automatically.</p>
                 {formData.photo && (
                   <img src={formData.photo} alt="Preview" className="mt-2 w-24 h-24 object-cover rounded-lg" />
                 )}
@@ -293,6 +311,7 @@ export default function GuestsPage() {
                     onChange={(e) => setFormData({ ...formData, episodeUrl: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
                     placeholder="https://youtube.com/watch?v=..."
+                    required
                   />
                 </div>
                 <div>
@@ -418,11 +437,22 @@ export default function GuestsPage() {
               className="bg-white rounded-xl shadow-lg overflow-hidden"
             >
               <div className="relative">
+                {(() => {
+                  const thumbnail = guest.episodeUrl ? getYouTubeThumbnail(guest.episodeUrl) : null
+                  const imageSrc = (guest.photo || '').trim() || thumbnail || '/logo.png'
+                  return (
                 <img
-                  src={guest.photo}
+                  src={imageSrc}
                   alt={guest.name}
                   className="w-full h-48 object-cover"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement
+                    if (target.src.endsWith('/logo.png')) return
+                    target.src = '/logo.png'
+                  }}
                 />
+                  )
+                })()}
                 {guest.featured && (
                   <div className="absolute top-3 left-3 bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-medium flex items-center gap-1">
                     <Star className="w-3 h-3" />

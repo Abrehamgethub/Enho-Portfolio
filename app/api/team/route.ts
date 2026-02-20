@@ -11,7 +11,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { name, credentials, role, tagline, specialties, image, color } = body
+    const { name, credentials, role, tagline, specialties, education, experience, image, color, socialLinks } = body
 
     if (!name || !credentials || !role) {
       return NextResponse.json(
@@ -26,8 +26,11 @@ export async function POST(request: NextRequest) {
       role,
       tagline: tagline || '',
       specialties: specialties || [],
+      education: education || [],
+      experience: experience || '',
       image: image || null,
-      color: color || 'from-primary-500 to-primary-600'
+      color: color || 'from-primary-500 to-primary-600',
+      socialLinks: socialLinks || {}
     })
 
     return NextResponse.json({ success: true, member })

@@ -9,7 +9,11 @@ import {
   Award, 
   BookOpen,
   Heart,
+  Facebook,
   Globe,
+  Instagram,
+  Linkedin,
+  Twitter,
   Mail,
   ChevronRight,
   Stethoscope,
@@ -28,7 +32,7 @@ const getDoctorColor = (id: string) => {
   const colors: Record<string, string> = {
     'dr-melat': 'from-violet-500 to-purple-600',
     'dr-tigist': 'from-rose-500 to-pink-600',
-    'dr-birucketawit': 'from-teal-500 to-cyan-600'
+    'dr-biruketawit': 'from-teal-500 to-cyan-600'
   }
   return colors[id] || 'from-primary-500 to-primary-600'
 }
@@ -133,6 +137,71 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                   </span>
                 ))}
               </motion.div>
+
+              {doctor.socialLinks && Object.values(doctor.socialLinks).some((v) => String(v || '').trim()) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.45 }}
+                  className="mt-6 flex flex-wrap justify-center md:justify-start gap-3"
+                >
+                  {doctor.socialLinks.linkedin && String(doctor.socialLinks.linkedin).trim() && (
+                    <a
+                      href={doctor.socialLinks.linkedin}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="LinkedIn"
+                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-primary-500 hover:border-primary-200 transition-colors"
+                    >
+                      <Linkedin className="w-5 h-5" />
+                    </a>
+                  )}
+                  {doctor.socialLinks.twitter && String(doctor.socialLinks.twitter).trim() && (
+                    <a
+                      href={doctor.socialLinks.twitter}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Twitter/X"
+                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-primary-500 hover:border-primary-200 transition-colors"
+                    >
+                      <Twitter className="w-5 h-5" />
+                    </a>
+                  )}
+                  {doctor.socialLinks.facebook && String(doctor.socialLinks.facebook).trim() && (
+                    <a
+                      href={doctor.socialLinks.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Facebook"
+                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-primary-500 hover:border-primary-200 transition-colors"
+                    >
+                      <Facebook className="w-5 h-5" />
+                    </a>
+                  )}
+                  {doctor.socialLinks.instagram && String(doctor.socialLinks.instagram).trim() && (
+                    <a
+                      href={doctor.socialLinks.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Instagram"
+                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-primary-500 hover:border-primary-200 transition-colors"
+                    >
+                      <Instagram className="w-5 h-5" />
+                    </a>
+                  )}
+                  {doctor.socialLinks.website && String(doctor.socialLinks.website).trim() && (
+                    <a
+                      href={doctor.socialLinks.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label="Website"
+                      className="w-10 h-10 rounded-xl bg-white border border-gray-200 flex items-center justify-center text-gray-600 hover:text-primary-500 hover:border-primary-200 transition-colors"
+                    >
+                      <Globe className="w-5 h-5" />
+                    </a>
+                  )}
+                </motion.div>
+              )}
             </div>
           </motion.div>
         </div>

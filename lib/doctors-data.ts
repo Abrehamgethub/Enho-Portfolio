@@ -6,6 +6,13 @@ export interface Doctor {
   tagline: string
   bio: string
   image: string | null
+  socialLinks?: {
+    linkedin?: string
+    twitter?: string
+    facebook?: string
+    instagram?: string
+    website?: string
+  }
   specialties: string[]
   education: {
     degree: string

@@ -25,6 +25,17 @@ export async function PATCH(
   try {
     await connectDB()
     const body = await request.json()
+
+    if ('episodeUrl' in body && !String(body.episodeUrl || '').trim()) {
+      return NextResponse.json(
+        { error: 'Episode URL is required' },
+        { status: 400 }
+      )
+    }
+
+    if ('photo' in body && !String(body.photo || '').trim()) {
+      body.photo = ''
+    }
     
     const guest = await Guest.findByIdAndUpdate(
       params.id,

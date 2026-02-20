@@ -5,10 +5,10 @@ export interface IGuest extends Document {
   nameAmharic?: string
   title: string // e.g., "Dr.", "Professor", etc.
   profession: string // e.g., "Cardiologist", "Health Expert"
-  photo: string
+  photo?: string
   photos?: string[] // Gallery of additional photos
   description: string
-  episodeUrl?: string // Link to their episode
+  episodeUrl: string // Link to their episode
   episodeDate?: Date
   programName?: string // Name of the program they appeared on
   featured: boolean
@@ -21,10 +21,10 @@ const GuestSchema = new Schema<IGuest>({
   nameAmharic: { type: String },
   title: { type: String, default: '' },
   profession: { type: String, required: true },
-  photo: { type: String, required: true },
+  photo: { type: String, default: '' },
   photos: { type: [String], default: [] },
   description: { type: String, required: true },
-  episodeUrl: { type: String },
+  episodeUrl: { type: String, required: true },
   episodeDate: { type: Date },
   programName: { type: String },
   featured: { type: Boolean, default: false },

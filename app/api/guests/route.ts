@@ -29,13 +29,20 @@ export async function POST(request: NextRequest) {
   try {
     await connectDB()
     const body = await request.json()
+
+    if (!body.episodeUrl || !String(body.episodeUrl).trim()) {
+      return NextResponse.json(
+        { error: 'Episode URL is required' },
+        { status: 400 }
+      )
+    }
     
     const guest = await Guest.create({
       name: body.name,
       nameAmharic: body.nameAmharic,
       title: body.title,
       profession: body.profession,
-      photo: body.photo,
+      photo: body.photo || '',
       photos: body.photos || [],
       description: body.description,
       episodeUrl: body.episodeUrl,

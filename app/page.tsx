@@ -29,6 +29,8 @@ import { Logo } from '@/components/Logo'
 import { FadeInUp, FadeInLeft, FadeInRight, ScaleIn, StaggerContainer, StaggerItem, HoverScale } from '@/components/Animations'
 import ContactForm from '@/components/ContactForm'
 import PodcastEpisodes from '@/components/PodcastEpisodes'
+import TrainingsSection from '@/components/TrainingsSection'
+import DocumentariesSection from '@/components/DocumentariesSection'
 
 // Navigation Component
 function Navigation() {
@@ -53,6 +55,8 @@ function Navigation() {
             <a href="#about" className="text-gray-600 hover:text-primary-500 transition-colors">About</a>
             <a href="#guests" className="text-gray-600 hover:text-primary-500 transition-colors">Our Guests</a>
             <a href="#partners" className="text-gray-600 hover:text-primary-500 transition-colors">Partners</a>
+            <a href="#trainings" className="text-gray-600 hover:text-primary-500 transition-colors">Trainings</a>
+            <a href="#documentaries" className="text-gray-600 hover:text-primary-500 transition-colors">Documentaries</a>
             <a href="#podcast" className="text-gray-600 hover:text-primary-500 transition-colors">Podcast</a>
             <a href="#contact" className="btn-primary text-sm">Contact Us</a>
           </div>
@@ -86,6 +90,8 @@ function Navigation() {
               <a href="#about" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">About</a>
               <a href="#guests" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Our Guests</a>
               <a href="#partners" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Partners</a>
+              <a href="#trainings" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Trainings</a>
+              <a href="#documentaries" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Documentaries</a>
               <a href="#podcast" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Podcast</a>
               <a href="#contact" onClick={() => setMobileMenuOpen(false)} className="btn-primary text-sm text-center">Contact Us</a>
             </div>
@@ -847,7 +853,8 @@ function PreviousGuestsSection() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {guests.map((guest, index) => {
             const videoThumbnail = getYouTubeThumbnail(guest.episodeUrl)
-            const displayImage = videoThumbnail || guest.photo
+            const photo = String(guest.photo || '').trim()
+            const displayImage = photo || videoThumbnail || '/logo.png'
             
             return (
               <motion.div
@@ -864,10 +871,17 @@ function PreviousGuestsSection() {
                     alt={guest.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     onError={(e) => {
-                      // Fallback to guest photo if thumbnail fails
                       const target = e.target as HTMLImageElement
-                      if (guest.photo && target.src !== guest.photo) {
-                        target.src = guest.photo
+                      if (photo && target.src.endsWith(photo)) {
+                        target.src = videoThumbnail || '/logo.png'
+                        return
+                      }
+                      if (videoThumbnail && target.src === videoThumbnail) {
+                        target.src = '/logo.png'
+                        return
+                      }
+                      if (!target.src.endsWith('/logo.png')) {
+                        target.src = '/logo.png'
                       }
                     }}
                   />
@@ -1633,16 +1647,67 @@ function Footer() {
 
 // Main Page
 export default function Home() {
+  const [activeSection, setActiveSection] = useState('about')
+
+  const sections = [
+    { id: 'about', label: 'About Us', component: <AboutSection /> },
+    { id: 'guests', label: 'Guests', component: <PreviousGuestsSection /> },
+    { id: 'partners', label: 'Partners', component: <PartnersSection /> },
+    { id: 'trainings', label: 'Trainings', component: <TrainingsSection /> },
+    { id: 'documentaries', label: 'Documentaries', component: <DocumentariesSection /> },
+  ]
+
   return (
     <main>
       <Navigation />
       <HeroSection />
-      <AboutSection />
+      <LatestUpdates socials={[]} />
+      
+      {/* Section Navigation */}
+      <section className="section-padding bg-white">
+        <div className="container-custom">
+          <div className="text-center mb-8">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Explore Our <span className="gradient-text">Work</span>
+            </h2>
+            <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+              Discover more about our mission, guests, partners, and the impact we're making together.
+            </p>
+          </div>
+          
+          {/* Navigation Buttons */}
+          <div className="flex flex-wrap justify-center gap-3 mb-12">
+            {sections.map((section) => (
+              <button
+                key={section.id}
+                onClick={() => setActiveSection(section.id)}
+                className={`px-6 py-3 rounded-xl font-medium transition-all ${
+                  activeSection === section.id
+                    ? 'bg-primary-500 text-white shadow-lg shadow-primary-500/25'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {section.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Active Section */}
+          <motion.div
+            key={activeSection}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {sections.find(s => s.id === activeSection)?.component}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Always Visible Sections */}
       <TeamSection />
-      <PreviousGuestsSection />
       <ImpactSection />
       <CertificatesSection />
-      <PartnersSection />
       <ServicesSection />
       <PodcastSection />
       <ContactSection />
