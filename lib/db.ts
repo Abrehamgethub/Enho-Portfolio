@@ -4,6 +4,16 @@
 import connectDB from './mongodb'
 import MessageModel, { IMessage } from './models/Message'
 
+// Export connectToDatabase for new API routes
+export async function connectToDatabase() {
+  try {
+    await connectDB()
+  } catch (error) {
+    console.error('Database connection failed:', error)
+    throw error
+  }
+}
+
 export interface Message {
   id: string
   name: string

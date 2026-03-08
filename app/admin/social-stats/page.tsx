@@ -28,11 +28,11 @@ interface SocialStat {
 }
 
 const DEFAULT_PLATFORMS = [
-  { platform: 'YouTube', handle: '@Eneho_Hakim', followers: '21K+', color: 'bg-red-500', url: 'https://www.youtube.com/@Eneho_Hakim', icon: 'youtube' },
-  { platform: 'TikTok', handle: '@eneho_egna', followers: '34K+', color: 'bg-black', url: 'https://www.tiktok.com/@eneho_egna', icon: 'tiktok' },
-  { platform: 'Instagram', handle: '@eneho_egna_podcast', followers: '1K+', color: 'bg-gradient-to-br from-purple-600 to-pink-500', url: 'https://www.instagram.com/eneho_egna_podcast/', icon: 'instagram' },
-  { platform: 'Telegram', handle: '@Eneho_Tena', followers: '5K+', color: 'bg-blue-500', url: 'https://t.me/Eneho_Tena', icon: 'telegram' },
-  { platform: 'Facebook', handle: 'Eneho Egna', followers: '2K+', color: 'bg-blue-600', url: 'https://web.facebook.com/profile.php?id=61566388200183', icon: 'facebook' },
+  { platform: 'YouTube', handle: '@Eneho_Hakim', followers: '21K+', color: 'bg-red-500', url: 'https://www.youtube.com/@Eneho_Hakim', icon: 'youtube', order: 1 },
+  { platform: 'TikTok', handle: '@eneho_egna', followers: '34K+', color: 'bg-black', url: 'https://www.tiktok.com/@eneho_egna', icon: 'tiktok', order: 2 },
+  { platform: 'Instagram', handle: '@eneho_egna_podcast', followers: '1K+', color: 'bg-gradient-to-br from-purple-600 to-pink-500', url: 'https://www.instagram.com/eneho_egna_podcast/', icon: 'instagram', order: 3 },
+  { platform: 'Telegram', handle: '@Eneho_Tena', followers: '5K+', color: 'bg-blue-500', url: 'https://t.me/Eneho_Tena', icon: 'telegram', order: 4 },
+  { platform: 'Facebook', handle: 'Eneho Egna', followers: '2K+', color: 'bg-blue-600', url: 'https://web.facebook.com/profile.php?id=61566388200183', icon: 'facebook', order: 5 },
 ]
 
 export default function SocialStatsPage() {

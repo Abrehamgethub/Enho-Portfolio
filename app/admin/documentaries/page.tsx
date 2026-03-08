@@ -15,7 +15,8 @@ import {
   Calendar,
   User,
   Play,
-  Eye
+  Eye,
+  Clock
 } from 'lucide-react'
 
 interface Documentary {

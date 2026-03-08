@@ -1417,7 +1417,6 @@ function LatestUpdates({ socials }: { socials: { icon: React.ReactNode; href: st
     { id: '1', text: '🎙️ New Episode: Understanding Diabetes Prevention', time: '2 hours ago' },
     { id: '2', text: '💊 Health Tip: 5 ways to boost your immune system', time: '5 hours ago' },
     { id: '3', text: '📢 Join us LIVE this Saturday for Q&A session!', time: '1 day ago' },
-    { id: '4', text: '🏥 Community Health Workshop - Register Now!', time: '2 days ago' },
   ])
 
   useEffect(() => {
@@ -1435,9 +1434,6 @@ function LatestUpdates({ socials }: { socials: { icon: React.ReactNode; href: st
     fetchUpdates()
   }, [])
 
-  // Duplicate for seamless loop
-  const displayUpdates = [...updates, ...updates]
-
   return (
     <div className="bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl p-6 text-white overflow-hidden">
       <div className="flex items-center gap-2 mb-4">
@@ -1446,49 +1442,28 @@ function LatestUpdates({ socials }: { socials: { icon: React.ReactNode; href: st
         <a 
           href="https://t.me/Eneho_Tena" 
           target="_blank" 
-          rel="noopener noreferrer"
-          className="ml-auto text-xs text-blue-400 hover:text-blue-300"
+          className="ml-auto text-sm text-gray-400 hover:text-blue-400 transition-colors flex items-center gap-1"
         >
-          @Eneho_Tena
+          View Telegram <ChevronRight className="w-4 h-4" />
         </a>
       </div>
       
-      {/* Scrolling Updates */}
-      <div className="relative h-32 overflow-hidden">
-        <motion.div
-          animate={{ y: [0, -(updates.length * 56)] }}
-          transition={{ 
-            duration: updates.length * 4, 
-            repeat: Infinity, 
-            ease: "linear",
-            repeatType: "loop"
-          }}
-          className="space-y-3"
-        >
-          {displayUpdates.map((update, index) => (
-            <div key={`${update.id}-${index}`} className="bg-white/5 rounded-lg p-3 border border-white/10">
+      {/* Static Updates Display */}
+      {updates.length > 0 ? (
+        <div className="space-y-3 max-h-32 overflow-y-auto">
+          {updates.map((update) => (
+            <div key={update.id} className="bg-white/5 rounded-lg p-3 border border-white/10">
               <p className="text-sm text-gray-200 line-clamp-2">{update.text}</p>
               <p className="text-xs text-gray-500 mt-1">{update.time}</p>
             </div>
           ))}
-        </motion.div>
-      </div>
-
-      {/* Social Icons Row */}
-      <div className="flex gap-2 mt-4 pt-4 border-t border-white/10">
-        {socials.map((social, index) => (
-          <motion.a
-            key={index}
-            href={social.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            whileHover={{ scale: 1.1 }}
-            className={`w-9 h-9 rounded-lg bg-white/10 flex items-center justify-center ${social.color} transition-colors`}
-          >
-            {social.icon}
-          </motion.a>
-        ))}
-      </div>
+        </div>
+      ) : (
+        <div className="text-center py-8 text-gray-400">
+          <Send className="w-8 h-8 mx-auto mb-2 opacity-50" />
+          <p>No updates yet. Check back soon!</p>
+        </div>
+      )}
     </div>
   )
 }
