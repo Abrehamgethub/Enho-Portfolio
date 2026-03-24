@@ -13,6 +13,36 @@ If you are logged in successfully, you will be redirected to the admin dashboard
 
 ---
 
+## Email Notifications for Contact Messages
+
+Your website now sends email notifications when someone fills out the contact form!
+
+### 📧 How Email Works:
+- When someone submits the contact form, you receive an email at **enehoegna@gmail.com**
+- The email includes: Name, Email, Subject, and Message
+- No configuration needed - it's set up to work with your Gmail account
+
+### 🔧 Gmail Setup (if needed):
+If emails aren't sending, you may need to:
+1. Enable 2-factor authentication on your Gmail account
+2. Generate an App Password for the website
+3. Contact your developer to add the App Password to the website settings
+
+### 📱 What You'll Receive:
+```
+New Contact Form Submission from Eneho Egna Website
+
+Name: [Visitor's Name]
+Email: [Visitor's Email]  
+Subject: [Message Subject]
+Message: [Full Message]
+
+---
+This message was sent from the Eneho Egna website contact form.
+```
+
+---
+
 ## Admin Dashboard Overview
 
 The admin dashboard is used to manage the content that appears on your website.

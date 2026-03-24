@@ -1636,7 +1636,27 @@ export default function Home() {
     <main>
       <Navigation />
       <HeroSection />
-      <LatestUpdates socials={[]} />
+      
+      {/* News & Updates Section */}
+      <section className="section-padding bg-gray-50">
+        <div className="container-custom">
+          <FadeInUp>
+            <div className="text-center mb-8">
+              <span className="inline-block px-4 py-1.5 bg-blue-100 text-blue-700 rounded-full text-sm font-medium mb-4">
+                Latest Updates
+              </span>
+              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                Stay <span className="gradient-text">Updated</span> With Eneho
+              </h2>
+              <p className="text-gray-600 max-w-2xl mx-auto text-lg">
+                Get the latest news, health tips, and announcements from our team.
+              </p>
+            </div>
+            
+            <LatestUpdates socials={[]} />
+          </FadeInUp>
+        </div>
+      </section>
       
       {/* Section Navigation */}
       <section className="section-padding bg-white">

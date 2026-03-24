@@ -34,7 +34,6 @@ const navItems = [
   { href: '/admin/podcast', icon: Youtube, label: 'Podcast', color: 'from-red-500 to-orange-500' },
   { href: '/admin/trainings', icon: GraduationCap, label: 'Trainings', color: 'from-teal-500 to-cyan-500' },
   { href: '/admin/documentaries', icon: Video, label: 'Documentaries', color: 'from-purple-500 to-indigo-500' },
-  { href: '/admin/social-stats', icon: BarChart3, label: 'Social Stats', color: 'from-purple-500 to-pink-500' },
   { href: '/admin/settings', icon: Settings, label: 'Settings', color: 'from-gray-500 to-slate-500' },
 ]
 

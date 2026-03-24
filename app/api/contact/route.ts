@@ -15,7 +15,7 @@ async function sendEmailNotification({ name, email, subject, message }: {
       port: parseInt(process.env.EMAIL_PORT || '587'),
       secure: false,
       auth: {
-        user: process.env.EMAIL_USER,
+        user: process.env.EMAIL_USER || 'enehoegna@gmail.com',
         pass: process.env.EMAIL_PASS,
       },
     })
@@ -35,8 +35,8 @@ This message was sent from the Eneho Egna website contact form.
     `.trim()
 
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || process.env.EMAIL_USER,
-      to: process.env.EMAIL_TO || process.env.EMAIL_USER,
+      from: process.env.EMAIL_FROM || 'enehoegna@gmail.com',
+      to: process.env.EMAIL_TO || 'enehoegna@gmail.com',
       subject: `New Contact: ${subject}`,
       text: emailContent,
       html: emailContent.replace(/\n/g, '<br>'),
