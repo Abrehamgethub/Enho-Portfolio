@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic'
 // GET all updates
 export async function GET() {
   try {
+    // Try to connect to MongoDB first
     await connectDB()
     const updates = await Update.find({ active: true }).sort({ createdAt: -1 }).limit(10)
     
@@ -18,9 +19,11 @@ export async function GET() {
       createdAt: update.createdAt
     }))
     
+    console.log('Found updates from database:', formattedUpdates.length)
     return NextResponse.json({ updates: formattedUpdates })
   } catch (error) {
-    console.error('Error fetching updates:', error)
+    console.error('Database connection failed, using fallback data:', error)
+    
     // Return sample data if DB fails
     return NextResponse.json({ 
       updates: [
@@ -36,14 +39,18 @@ export async function GET() {
 // POST new update
 export async function POST(request: NextRequest) {
   try {
+    console.log('Creating new update...')
     await connectDB()
     const body = await request.json()
+    console.log('Update data:', body)
     
     const update = await Update.create({
       text: body.text,
       emoji: body.emoji || '📢',
       active: true
     })
+    
+    console.log('Update created successfully:', update._id)
     
     return NextResponse.json({ 
       success: true, 

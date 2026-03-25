@@ -1422,10 +1422,16 @@ function LatestUpdates({ socials }: { socials: { icon: React.ReactNode; href: st
   useEffect(() => {
     async function fetchUpdates() {
       try {
+        console.log('Fetching updates from /api/updates...')
         const response = await fetch('/api/updates')
         const data = await response.json()
+        console.log('Updates API response:', data)
+        
         if (data.updates && data.updates.length > 0) {
+          console.log('Setting updates:', data.updates)
           setUpdates(data.updates)
+        } else {
+          console.log('No updates found in response')
         }
       } catch (error) {
         console.error('Failed to fetch updates:', error)
