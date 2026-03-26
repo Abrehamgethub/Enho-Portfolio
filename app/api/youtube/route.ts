@@ -57,7 +57,7 @@ async function fetchFromRSS(): Promise<any[]> {
   try {
     // Eneho Hakim YouTube channel ID
     // To find yours: https://commentpicker.com/youtube-channel-id.php
-    const channelId = process.env.YOUTUBE_CHANNEL_ID || 'UCRdVN9EeQrw0zD9tCz1i1LA'
+    const channelId = process.env.YOUTUBE_CHANNEL_ID || 'UCU2XkPTOjJDaPeFl0qj7wJQ'
     
     const response = await fetch(
       `https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`,
