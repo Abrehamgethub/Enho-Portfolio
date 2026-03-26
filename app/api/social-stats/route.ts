@@ -8,6 +8,37 @@ export async function GET() {
   try {
     await connectToDatabase()
     const stats = await SocialStats.find().sort({ order: 1 })
+    
+    // Automate YouTube subscriber count if API key is present
+    const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
+    const CHANNEL_ID = process.env.YOUTUBE_CHANNEL_ID || 'UCU2XkPTOjJDaPeFl0qj7wJQ'
+    
+    if (YOUTUBE_API_KEY) {
+      try {
+        const response = await fetch(
+          `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${CHANNEL_ID}&key=${YOUTUBE_API_KEY}`
+        )
+        if (response.ok) {
+          const data = await response.json()
+          const subCount = data.items?.[0]?.statistics?.subscriberCount
+          if (subCount) {
+            // Update the YouTube stat in the list
+            const youtubeIndex = stats.findIndex(s => s.platform.toLowerCase() === 'youtube')
+            if (youtubeIndex !== -1) {
+              const count = parseInt(subCount)
+              let displayCount = subCount
+              if (count >= 1000000) displayCount = (count / 1000000).toFixed(1).replace(/\.0$/, '') + "M"
+              else if (count >= 1000) displayCount = (count / 1000).toFixed(1).replace(/\.0$/, '') + "K"
+              
+              stats[youtubeIndex].followers = displayCount + " Subscribers"
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fetch live YouTube stats:', err)
+      }
+    }
+
     return NextResponse.json(stats)
   } catch (error) {
     console.error('Failed to fetch social stats:', error)

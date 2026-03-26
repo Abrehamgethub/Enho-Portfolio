@@ -99,6 +99,3 @@ function decodeHTMLEntities(text: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
 }
-
-  }
-}
