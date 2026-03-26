@@ -150,5 +150,3 @@ export default function ImpactSection() {
     </section>
   )
 }
-
-// Certificates Section

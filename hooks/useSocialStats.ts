@@ -30,7 +30,7 @@ export function useTotalFollowers(defaultTotal = "57K+") {
             else t += num
           }
           
-          if (t >= 1000000) return (t / 1000000).toFixed(1).replace(/\\.0$/, '') + "M+"
+          if (t >= 1000000) return (t / 1000000).toFixed(1).replace(/\.0$/, '') + "M+"
           if (t >= 1000) return Math.floor(t / 1000) + "K+"
           return t + "+"
         })
