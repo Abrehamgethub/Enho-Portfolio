@@ -10,10 +10,7 @@ export async function GET() {
     if (!YOUTUBE_API_KEY) {
       // Try RSS feed approach (no API key needed)
       const rssVideos = await fetchFromRSS()
-      if (rssVideos.length > 0) {
-        return NextResponse.json({ videos: rssVideos, source: 'rss' })
-      }
-      return NextResponse.json({ videos: getSampleVideos(), source: 'sample' })
+      return NextResponse.json({ videos: rssVideos || [], source: rssVideos.length > 0 ? 'rss' : 'none' })
     }
 
     // Fetch latest videos from YouTube channel using API
@@ -45,10 +42,7 @@ export async function GET() {
     console.error('YouTube API error:', error)
     // Try RSS as fallback
     const rssVideos = await fetchFromRSS()
-    if (rssVideos.length > 0) {
-      return NextResponse.json({ videos: rssVideos, source: 'rss' })
-    }
-    return NextResponse.json({ videos: getSampleVideos(), source: 'sample' })
+    return NextResponse.json({ videos: rssVideos || [], source: rssVideos.length > 0 ? 'rss' : 'none' })
   }
 }
 
@@ -106,55 +100,5 @@ function decodeHTMLEntities(text: string): string {
     .replace(/&#39;/g, "'")
 }
 
-function getSampleVideos() {
-  return [
-    {
-      id: '1',
-      title: 'Understanding Diabetes: Prevention & Management',
-      description: 'In this episode, we discuss diabetes prevention strategies and management tips.',
-      thumbnail: '/podcast-thumb-1.jpg',
-      publishedAt: '2024-11-15T10:00:00Z',
-      url: 'https://www.youtube.com/@Eneho_Hakim'
-    },
-    {
-      id: '2',
-      title: 'Mental Health Awareness in Ethiopia',
-      description: 'Breaking the stigma around mental health and discussing available resources.',
-      thumbnail: '/podcast-thumb-2.jpg',
-      publishedAt: '2024-11-08T10:00:00Z',
-      url: 'https://www.youtube.com/@Eneho_Hakim'
-    },
-    {
-      id: '3',
-      title: 'Women\'s Health: Reproductive Care Basics',
-      description: 'Essential information about women\'s reproductive health and wellness.',
-      thumbnail: '/podcast-thumb-3.jpg',
-      publishedAt: '2024-11-01T10:00:00Z',
-      url: 'https://www.youtube.com/@Eneho_Hakim'
-    },
-    {
-      id: '4',
-      title: 'Nutrition Tips for a Healthier Life',
-      description: 'Practical nutrition advice tailored for Ethiopian dietary habits.',
-      thumbnail: '/podcast-thumb-4.jpg',
-      publishedAt: '2024-10-25T10:00:00Z',
-      url: 'https://www.youtube.com/@Eneho_Hakim'
-    },
-    {
-      id: '5',
-      title: 'First Aid Basics Everyone Should Know',
-      description: 'Life-saving first aid techniques for emergency situations.',
-      thumbnail: '/podcast-thumb-5.jpg',
-      publishedAt: '2024-10-18T10:00:00Z',
-      url: 'https://www.youtube.com/@Eneho_Hakim'
-    },
-    {
-      id: '6',
-      title: 'Hypertension: The Silent Killer',
-      description: 'Understanding high blood pressure and how to manage it effectively.',
-      thumbnail: '/podcast-thumb-6.jpg',
-      publishedAt: '2024-10-11T10:00:00Z',
-      url: 'https://www.youtube.com/@Eneho_Hakim'
-    }
-  ]
+  }
 }

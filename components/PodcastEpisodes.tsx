@@ -43,6 +43,25 @@ export default function PodcastEpisodes() {
     )
   }
 
+  if (videos.length === 0) {
+    return (
+      <div className="text-center py-12 bg-gray-100 rounded-2xl border border-dashed border-gray-300">
+        <Play className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+        <h4 className="text-lg font-semibold text-gray-900 mb-2">No recent episodes found</h4>
+        <p className="text-gray-600 mb-6">We couldn't load the latest episodes right now. Check back later or watch directly on YouTube.</p>
+        <a 
+          href="https://www.youtube.com/@Eneho_Hakim" 
+          target="_blank" 
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 bg-red-600 text-white px-6 py-2 rounded-lg font-medium hover:bg-red-700 transition-colors"
+        >
+          Watch on YouTube
+          <ExternalLink className="w-4 h-4" />
+        </a>
+      </div>
+    )
+  }
+
   return (
     <div className="grid md:grid-cols-3 gap-6">
       {videos.slice(0, 3).map((video, index) => (
