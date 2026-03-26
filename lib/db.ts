@@ -70,7 +70,7 @@ let teamMembers: TeamMember[] = [
     socialLinks: {}
   },
   {
-    id: 'dr-biruketawit',
+    id: 'dr-birucketawit',
     name: 'Dr. Birucketawit Alebachew',
     credentials: 'MD, BSc',
     role: 'The Educator',

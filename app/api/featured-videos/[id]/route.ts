@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import FeaturedVideo from '@/lib/models/FeaturedVideo'
+import { requireAuth } from '@/lib/auth-middleware'
 
-// DELETE a featured video
+// DELETE a featured video (admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectDB()
     await FeaturedVideo.findByIdAndDelete(params.id)
@@ -17,11 +21,14 @@ export async function DELETE(
   }
 }
 
-// PATCH - update video (active status, order, category)
+// PATCH - update video (admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectDB()
     const body = await request.json()

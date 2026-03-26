@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Documentary from '@/lib/models/Documentary'
 import { connectToDatabase } from '@/lib/db'
+import { requireAuth } from '@/lib/auth-middleware'
 
 // GET all documentaries
 export async function GET(request: NextRequest) {
@@ -29,8 +30,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST new documentary
+// POST new documentary (admin only)
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectToDatabase()
     const body = await request.json()
@@ -48,8 +52,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT update documentary
+// PUT update documentary (admin only)
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectToDatabase()
     const body = await request.json()
@@ -85,8 +92,11 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-// DELETE documentary
+// DELETE documentary (admin only)
 export async function DELETE(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectToDatabase()
     const { searchParams } = new URL(request.url)

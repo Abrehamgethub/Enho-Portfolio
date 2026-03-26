@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Update from '@/lib/models/Update'
+import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,7 @@ export async function GET() {
       createdAt: update.createdAt
     }))
     
-    console.log('Found updates from database:', formattedUpdates.length)
+
     return NextResponse.json({ updates: formattedUpdates })
   } catch (error) {
     console.error('Database connection failed, using fallback data:', error)
@@ -36,13 +37,14 @@ export async function GET() {
   }
 }
 
-// POST new update
+// POST new update (admin only)
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
-    console.log('Creating new update...')
     await connectDB()
     const body = await request.json()
-    console.log('Update data:', body)
     
     const update = await Update.create({
       text: body.text,
@@ -50,7 +52,6 @@ export async function POST(request: NextRequest) {
       active: true
     })
     
-    console.log('Update created successfully:', update._id)
     
     return NextResponse.json({ 
       success: true, 

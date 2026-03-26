@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Update from '@/lib/models/Update'
+import { requireAuth } from '@/lib/auth-middleware'
 
-// DELETE an update
+// DELETE an update (admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectDB()
     await Update.findByIdAndDelete(params.id)
@@ -17,11 +21,14 @@ export async function DELETE(
   }
 }
 
-// PATCH - toggle active status
+// PATCH - toggle active status (admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectDB()
     const body = await request.json()

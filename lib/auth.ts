@@ -1,47 +1,70 @@
-// Simple auth utilities for admin dashboard
-// In production, use a proper auth solution like NextAuth.js
+// Auth utilities for admin dashboard
+// Uses HMAC-signed tokens instead of plain base64
 
-const ADMIN_CREDENTIALS = {
-  username: process.env.ADMIN_USERNAME || 'admin',
-  password: process.env.ADMIN_PASSWORD || 'eneho2024'
+import { createHmac, randomBytes } from 'crypto'
+
+function getAuthSecret(): string {
+  const secret = process.env.AUTH_SECRET
+  if (!secret || secret === 'eneho-admin-secret-2024') {
+    console.warn('⚠️ AUTH_SECRET is not set or using default. Set a strong secret in your environment variables.')
+  }
+  return secret || 'fallback-change-me'
 }
 
-// Secret key for token validation (use env var in production)
-const AUTH_SECRET = process.env.AUTH_SECRET || 'eneho-admin-secret-2024'
+function getAdminCredentials() {
+  return {
+    username: process.env.ADMIN_USERNAME || 'admin',
+    password: process.env.ADMIN_PASSWORD || '',
+  }
+}
 
 export function validateCredentials(username: string, password: string): boolean {
-  return username === ADMIN_CREDENTIALS.username && password === ADMIN_CREDENTIALS.password
+  const creds = getAdminCredentials()
+  if (!creds.password) {
+    console.error('❌ ADMIN_PASSWORD is not set. Login is disabled.')
+    return false
+  }
+  return username === creds.username && password === creds.password
 }
 
 export function generateToken(): string {
-  // Create a signed token that includes expiration time
+  const secret = getAuthSecret()
   const expiry = Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-  const payload = `${expiry}:${AUTH_SECRET}`
-  return Buffer.from(payload).toString('base64')
+  const nonce = randomBytes(16).toString('hex')
+  const payload = `${expiry}:${nonce}`
+  const signature = createHmac('sha256', secret).update(payload).digest('hex')
+  return Buffer.from(`${payload}:${signature}`).toString('base64')
 }
 
 export function validateSession(token: string): boolean {
   try {
-    // Decode and validate the token
+    const secret = getAuthSecret()
     const decoded = Buffer.from(token, 'base64').toString('utf-8')
-    const [expiryStr, secret] = decoded.split(':')
+    const parts = decoded.split(':')
+    if (parts.length !== 3) return false
+
+    const [expiryStr, nonce, signature] = parts
     const expiry = parseInt(expiryStr, 10)
-    
-    // Check if token is valid and not expired
-    if (secret !== AUTH_SECRET) return false
+
+    // Check expiration
     if (isNaN(expiry) || Date.now() > expiry) return false
-    
-    return true
+
+    // Verify HMAC signature
+    const payload = `${expiryStr}:${nonce}`
+    const expectedSignature = createHmac('sha256', secret).update(payload).digest('hex')
+
+    // Timing-safe comparison
+    if (signature.length !== expectedSignature.length) return false
+    let mismatch = 0
+    for (let i = 0; i < signature.length; i++) {
+      mismatch |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i)
+    }
+    return mismatch === 0
   } catch {
     return false
   }
 }
 
-// These are no longer needed but kept for compatibility
-export function createSession(token: string): void {
-  // Token is self-validating, no storage needed
-}
-
-export function deleteSession(token: string): void {
-  // Token invalidation handled by cookie deletion
-}
+// Kept for compatibility
+export function createSession(_token: string): void {}
+export function deleteSession(_token: string): void {}

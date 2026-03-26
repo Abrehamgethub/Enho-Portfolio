@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMessages, addMessage } from '@/lib/db'
+import { requireAuth } from '@/lib/auth-middleware'
 
 // Disable caching for this route
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
-// GET all messages
-export async function GET() {
+// GET all messages (admin only)
+export async function GET(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   const messages = await getMessages()
   return NextResponse.json({ messages }, {
     headers: {

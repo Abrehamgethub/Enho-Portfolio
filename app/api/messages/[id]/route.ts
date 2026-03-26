@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getMessage, updateMessage, deleteMessage, markMessageAsRead } from '@/lib/db'
+import { requireAuth } from '@/lib/auth-middleware'
 
-// GET single message
+// GET single message (admin only)
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   const message = await getMessage(params.id)
   if (!message) {
     return NextResponse.json({ error: 'Message not found' }, { status: 404 })
@@ -13,11 +17,14 @@ export async function GET(
   return NextResponse.json({ message })
 }
 
-// PATCH update message (mark as read, etc.)
+// PATCH update message (admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const body = await request.json()
     
@@ -39,11 +46,14 @@ export async function PATCH(
   }
 }
 
-// DELETE message
+// DELETE message (admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   const deleted = await deleteMessage(params.id)
   if (!deleted) {
     return NextResponse.json({ error: 'Message not found' }, { status: 404 })

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import SocialStats from '@/lib/models/SocialStats'
 import { connectToDatabase } from '@/lib/db'
+import { requireAuth } from '@/lib/auth-middleware'
 
 // GET all social stats
 export async function GET() {
@@ -17,8 +18,11 @@ export async function GET() {
   }
 }
 
-// POST/UPDATE social stats
+// POST/UPDATE social stats (admin only)
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectToDatabase()
     const body = await request.json()
@@ -49,8 +53,11 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// PUT to update multiple stats at once
+// PUT to update multiple stats at once (admin only)
 export async function PUT(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectToDatabase()
     const body = await request.json()

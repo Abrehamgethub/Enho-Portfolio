@@ -429,7 +429,7 @@ export const doctors: Doctor[] = [
     ]
   },
   {
-    id: "dr-biruketawit",
+    id: "dr-birucketawit",
     name: "Dr. Birucketawit Alebachew",
     credentials: "MD, BSc",
     role: "Co-Founder & Co-host",

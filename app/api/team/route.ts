@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getTeamMembers, addTeamMember } from '@/lib/db'
+import { requireAuth } from '@/lib/auth-middleware'
 
 // GET all team members
 export async function GET() {
@@ -7,8 +8,11 @@ export async function GET() {
   return NextResponse.json({ team })
 }
 
-// POST new team member
+// POST new team member (admin only)
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     const body = await request.json()
     const { name, credentials, role, tagline, specialties, education, experience, image, color, socialLinks } = body

@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Sponsor from '@/lib/models/Sponsor'
+import { requireAuth } from '@/lib/auth-middleware'
 
-// DELETE a sponsor
+// DELETE a sponsor (admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectDB()
     await Sponsor.findByIdAndDelete(params.id)
@@ -17,11 +21,14 @@ export async function DELETE(
   }
 }
 
-// PATCH - update sponsor
+// PATCH - update sponsor (admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectDB()
     const body = await request.json()

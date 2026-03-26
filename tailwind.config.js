@@ -43,7 +43,7 @@ module.exports = {
           800: '#8a7a5a',
           900: '#5f543e',
         },
-        slate: {
+        'brand-slate': {
           DEFAULT: '#2c3e50',
           light: '#34495e',
           dark: '#1a252f',

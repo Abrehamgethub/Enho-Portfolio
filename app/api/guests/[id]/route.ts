@@ -1,12 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import Guest from '@/lib/models/Guest'
+import { requireAuth } from '@/lib/auth-middleware'
 
-// DELETE a guest
+// DELETE a guest (admin only)
 export async function DELETE(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectDB()
     await Guest.findByIdAndDelete(params.id)
@@ -17,11 +21,14 @@ export async function DELETE(
   }
 }
 
-// PATCH - update guest
+// PATCH - update guest (admin only)
 export async function PATCH(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectDB()
     const body = await request.json()

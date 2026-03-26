@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import connectDB from '@/lib/mongodb'
 import FeaturedVideo from '@/lib/models/FeaturedVideo'
+import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,8 +37,11 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - add a featured video
+// POST - add a featured video (admin only)
 export async function POST(request: NextRequest) {
+  const authError = requireAuth(request)
+  if (authError) return authError
+
   try {
     await connectDB()
     const body = await request.json()
