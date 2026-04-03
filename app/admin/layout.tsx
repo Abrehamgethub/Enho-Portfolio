@@ -29,11 +29,14 @@ import { Logo } from '@/components/Logo'
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Dashboard', color: 'from-blue-500 to-indigo-500' },
   { href: '/admin/messages', icon: MessageSquare, label: 'Messages', color: 'from-green-500 to-emerald-500' },
+  { href: '/admin/team', icon: Users, label: 'Team Members', color: 'from-primary-500 to-primary-600' },
+  { href: '/admin/updates', icon: Send, label: 'News & Updates', color: 'from-blue-600 to-indigo-600' },
   { href: '/admin/guests', icon: UserCircle, label: 'Guests', color: 'from-indigo-500 to-purple-500' },
   { href: '/admin/sponsors', icon: Building2, label: 'Partners', color: 'from-amber-500 to-orange-500' },
   { href: '/admin/podcast', icon: Youtube, label: 'Podcast', color: 'from-red-500 to-orange-500' },
   { href: '/admin/trainings', icon: GraduationCap, label: 'Trainings', color: 'from-teal-500 to-cyan-500' },
   { href: '/admin/documentaries', icon: Video, label: 'Documentaries', color: 'from-purple-500 to-indigo-500' },
+  { href: '/admin/social-stats', icon: BarChart3, label: 'Social Stats', color: 'from-pink-500 to-rose-500' },
   { href: '/admin/settings', icon: Settings, label: 'Settings', color: 'from-gray-500 to-slate-500' },
 ]
 
@@ -47,27 +50,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isLoginPage = pathname === '/admin/login'
 
   useEffect(() => {
+    // If it's already the login page, no need to check auth
     if (isLoginPage) {
+      setAuthenticated(false)
       setLoading(false)
       return
     }
 
+    let isMounted = true
+
     async function checkAuth() {
       try {
         const response = await fetch('/api/auth/check')
+        if (!isMounted) return
+
         if (response.ok) {
           setAuthenticated(true)
+          setLoading(false)
         } else {
+          setAuthenticated(false)
+          // Store loading=true until redirect happens to avoid flickering dashboard content
           router.push('/admin/login')
+          // Note: setLoading(false) will happen when the route changes and effect re-runs for isLoginPage
         }
       } catch (error) {
-        router.push('/admin/login')
-      } finally {
-        setLoading(false)
-      }
+        if (isMounted) {
+          setAuthenticated(false)
+          router.push('/admin/login')
+        }
+      } 
     }
 
     checkAuth()
+
+    return () => { isMounted = false }
   }, [pathname, router, isLoginPage])
 
   const handleLogout = async () => {
