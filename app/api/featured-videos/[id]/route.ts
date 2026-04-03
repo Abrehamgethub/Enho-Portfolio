@@ -6,14 +6,14 @@ import { requireAuth } from '@/lib/auth-middleware'
 // DELETE a featured video (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
 
   try {
     await connectDB()
-    await FeaturedVideo.findByIdAndDelete(params.id)
+    await FeaturedVideo.findByIdAndDelete((await params).id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting featured video:', error)
@@ -24,7 +24,7 @@ export async function DELETE(
 // PATCH - update video (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
@@ -34,7 +34,7 @@ export async function PATCH(
     const body = await request.json()
     
     const video = await FeaturedVideo.findByIdAndUpdate(
-      params.id,
+      (await params).id,
       { 
         ...(body.active !== undefined && { active: body.active }),
         ...(body.order !== undefined && { order: body.order }),

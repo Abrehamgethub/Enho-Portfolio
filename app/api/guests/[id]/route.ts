@@ -6,14 +6,14 @@ import { requireAuth } from '@/lib/auth-middleware'
 // DELETE a guest (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
 
   try {
     await connectDB()
-    await Guest.findByIdAndDelete(params.id)
+    await Guest.findByIdAndDelete((await params).id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting guest:', error)
@@ -24,7 +24,7 @@ export async function DELETE(
 // PATCH - update guest (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
@@ -45,7 +45,7 @@ export async function PATCH(
     }
     
     const guest = await Guest.findByIdAndUpdate(
-      params.id,
+      (await params).id,
       body,
       { new: true }
     )

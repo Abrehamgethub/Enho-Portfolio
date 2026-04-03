@@ -34,6 +34,7 @@ export default function Navigation() {
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center gap-8">
             <Link href="/" className="text-gray-600 hover:text-primary-500 transition-colors">About</Link>
+            <Link href="/team" className="text-gray-600 hover:text-primary-500 transition-colors">Team</Link>
             <Link href="/guests" className="text-gray-600 hover:text-primary-500 transition-colors">Guests</Link>
             <Link href="/partners" className="text-gray-600 hover:text-primary-500 transition-colors">Partners</Link>
             <Link href="/trainings" className="text-gray-600 hover:text-primary-500 transition-colors">Trainings</Link>
@@ -70,6 +71,7 @@ export default function Navigation() {
           >
             <div className="flex flex-col gap-4">
               <Link href="/" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">About</Link>
+              <Link href="/team" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Team</Link>
               <Link href="/guests" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Guests</Link>
               <Link href="/partners" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Partners</Link>
               <Link href="/trainings" onClick={() => setMobileMenuOpen(false)} className="text-gray-600 hover:text-primary-500 transition-colors py-2">Trainings</Link>

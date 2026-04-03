@@ -6,14 +6,14 @@ import { requireAuth } from '@/lib/auth-middleware'
 // DELETE an update (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
 
   try {
     await connectDB()
-    await Update.findByIdAndDelete(params.id)
+    await Update.findByIdAndDelete((await params).id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting update:', error)
@@ -24,7 +24,7 @@ export async function DELETE(
 // PATCH - toggle active status (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
@@ -34,7 +34,7 @@ export async function PATCH(
     const body = await request.json()
     
     const update = await Update.findByIdAndUpdate(
-      params.id,
+      (await params).id,
       { active: body.active },
       { new: true }
     )

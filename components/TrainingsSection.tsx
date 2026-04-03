@@ -35,7 +35,7 @@ export default function TrainingsSection() {
   useEffect(() => {
     async function fetchTrainings() {
       try {
-        const response = await fetch('/api/trainings?featured=true')
+        const response = await fetch('/api/trainings')
         if (response.ok) {
           const data = await response.json()
           setTrainings(data.slice(0, 6)) // Show max 6 trainings

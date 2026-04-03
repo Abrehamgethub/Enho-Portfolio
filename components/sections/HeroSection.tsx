@@ -86,7 +86,7 @@ export default function HeroSection() {
                 <Play className="w-4 h-4" />
                 Listen to Podcast
               </Link>
-              <Link href="/#team" className="inline-flex items-center justify-center gap-2 bg-primary-900/60 backdrop-blur-sm text-white px-4 py-2 md:px-5 md:py-2.5 rounded-lg font-medium hover:bg-primary-900/80 hover:scale-105 transition-all border border-white/30 text-sm shadow-lg">
+              <Link href="/team" className="inline-flex items-center justify-center gap-2 bg-primary-900/60 backdrop-blur-sm text-white px-4 py-2 md:px-5 md:py-2.5 rounded-lg font-medium hover:bg-primary-900/80 hover:scale-105 transition-all border border-white/30 text-sm shadow-lg">
                 Meet the Team
                 <ChevronRight className="w-4 h-4" />
               </Link>

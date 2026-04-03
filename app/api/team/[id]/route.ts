@@ -5,9 +5,9 @@ import { requireAuth } from '@/lib/auth-middleware'
 // GET single team member
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const member = getTeamMember(params.id)
+  const member = getTeamMember((await params).id)
   if (!member) {
     return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
   }
@@ -17,14 +17,14 @@ export async function GET(
 // PATCH update team member (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
 
   try {
     const body = await request.json()
-    const member = updateTeamMember(params.id, body)
+    const member = updateTeamMember((await params).id, body)
     if (!member) {
       return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
     }
@@ -37,12 +37,12 @@ export async function PATCH(
 // DELETE team member (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
 
-  const deleted = deleteTeamMember(params.id)
+  const deleted = deleteTeamMember((await params).id)
   if (!deleted) {
     return NextResponse.json({ error: 'Team member not found' }, { status: 404 })
   }

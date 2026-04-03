@@ -6,14 +6,14 @@ import { requireAuth } from '@/lib/auth-middleware'
 // DELETE a sponsor (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
 
   try {
     await connectDB()
-    await Sponsor.findByIdAndDelete(params.id)
+    await Sponsor.findByIdAndDelete((await params).id)
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting sponsor:', error)
@@ -24,7 +24,7 @@ export async function DELETE(
 // PATCH - update sponsor (admin only)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const authError = requireAuth(request)
   if (authError) return authError
@@ -34,7 +34,7 @@ export async function PATCH(
     const body = await request.json()
     
     const sponsor = await Sponsor.findByIdAndUpdate(
-      params.id,
+      (await params).id,
       body,
       { new: true }
     )
