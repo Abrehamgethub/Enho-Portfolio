@@ -63,7 +63,7 @@ export default function PodcastSection() {
   const platformsToDisplay = stats.length > 0 ? stats.slice(0, 4) : defaultPlatforms
 
   return (
-    <section id="podcast" className="section-padding bg-gray-50 overflow-hidden">
+    <section className="section-padding bg-gray-50 overflow-hidden">
       <div className="container-custom">
         {/* Hero Banner */}
         <FadeInUp>

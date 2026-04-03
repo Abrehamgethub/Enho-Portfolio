@@ -30,7 +30,7 @@ export default function ContactSection() {
   ]
 
   return (
-    <section id="contact" className="section-padding bg-white">
+    <section className="section-padding bg-white">
       <div className="container-custom">
         {/* Header */}
         <FadeInUp className="text-center mb-12 md:mb-16">

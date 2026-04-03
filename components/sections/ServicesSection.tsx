@@ -61,7 +61,7 @@ export default function ServicesSection() {
   ]
 
   return (
-    <section id="services" className="section-padding bg-white">
+    <section className="section-padding bg-white">
       <div className="container-custom">
         {/* Header */}
         <FadeInUp className="text-center mb-12 md:mb-16">
@@ -114,10 +114,10 @@ export default function ServicesSection() {
         {/* CTA */}
         <FadeInUp delay={0.4} className="text-center mt-10 md:mt-12">
           <p className="text-gray-500 mb-4">Want to collaborate or bring us to your community?</p>
-          <a href="#contact" className="inline-flex items-center gap-2 bg-primary-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/25">
+          <Link href="/contact" className="inline-flex items-center gap-2 bg-primary-500 text-white px-6 py-3 rounded-xl font-medium hover:bg-primary-600 transition-colors shadow-lg shadow-primary-500/25">
             Get in Touch
             <ChevronRight className="w-4 h-4" />
-          </a>
+          </Link>
         </FadeInUp>
       </div>
     </section>

@@ -49,7 +49,7 @@ export default function TeamSection() {
   ]
 
   return (
-    <section id="team" className="section-padding bg-gray-50">
+    <section className="section-padding bg-gray-50">
       <div className="container-custom">
         {/* Header */}
         <FadeInUp className="text-center mb-12 md:mb-16">

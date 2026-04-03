@@ -101,7 +101,7 @@ export default function PartnersSection() {
   ]
 
   return (
-    <section id="partners" className="section-padding bg-gradient-to-br from-amber-50 to-orange-50">
+    <section className="section-padding bg-gradient-to-br from-amber-50 to-orange-50">
       <div className="container-custom">
         <FadeInUp className="text-center mb-12">
           <span className="inline-block px-4 py-1.5 bg-amber-100 text-amber-700 rounded-full text-sm font-medium mb-4">
@@ -292,13 +292,13 @@ export default function PartnersSection() {
             <p className="text-white/80 mb-4 max-w-xl mx-auto">
               Join our mission to bring health education and community wellness programs to Ethiopia.
             </p>
-            <a
-              href="#contact"
+            <Link
+              href="/contact"
               className="inline-flex items-center gap-2 bg-white text-amber-600 px-6 py-3 rounded-lg font-medium hover:bg-amber-50 transition-colors"
             >
               Contact Us
               <ChevronRight className="w-4 h-4" />
-            </a>
+            </Link>
           </div>
         </FadeInUp>
       </div>

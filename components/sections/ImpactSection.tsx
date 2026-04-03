@@ -57,7 +57,7 @@ export default function ImpactSection() {
   ]
 
   return (
-    <section id="impact" className="section-padding bg-white overflow-hidden">
+    <section className="section-padding bg-white overflow-hidden">
       <div className="container-custom">
         {/* Header */}
         <FadeInUp className="text-center mb-12 md:mb-16">

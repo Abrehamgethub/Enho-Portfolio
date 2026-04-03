@@ -26,7 +26,7 @@ export default function AboutSection() {
   ]
 
   return (
-    <section id="about" className="section-padding bg-white overflow-hidden">
+    <section className="section-padding bg-white overflow-hidden">
       <div className="container-custom">
         {/* Main Content */}
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center mb-16 md:mb-20">

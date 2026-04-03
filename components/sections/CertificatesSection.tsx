@@ -23,7 +23,7 @@ export default function CertificatesSection() {
   ]
 
   return (
-    <section id="certificates" className="section-padding bg-gray-50">
+    <section className="section-padding bg-gray-50">
       <div className="container-custom">
         <FadeInUp>
           <div className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 rounded-3xl p-8 md:p-12 overflow-hidden">

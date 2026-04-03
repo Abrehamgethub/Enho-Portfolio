@@ -88,7 +88,7 @@ export default function PreviousGuestsSection() {
   if (guests.length === 0) return null
 
   return (
-    <section id="guests" className="section-padding bg-gradient-to-br from-indigo-50 to-purple-50">
+    <section className="section-padding bg-gradient-to-br from-indigo-50 to-purple-50">
       <div className="container-custom">
         <FadeInUp className="text-center mb-12">
           <span className="inline-block px-4 py-1.5 bg-indigo-100 text-indigo-600 rounded-full text-sm font-medium mb-4">
