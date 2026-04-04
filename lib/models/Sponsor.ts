@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose'
 
 export interface ISponsor extends Document {
+  id?: string // Slug used for routing
   name: string
   nameAmharic?: string
   logo: string
@@ -17,6 +18,7 @@ export interface ISponsor extends Document {
 }
 
 const SponsorSchema = new Schema<ISponsor>({
+  id: { type: String, unique: true, sparse: true },
   name: { type: String, required: true },
   nameAmharic: { type: String },
   logo: { type: String, required: true },

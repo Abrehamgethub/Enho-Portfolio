@@ -3,6 +3,8 @@ import Training from '@/lib/models/Training'
 import { connectToDatabase } from '@/lib/db'
 import { requireAuth } from '@/lib/auth-middleware'
 
+export const dynamic = 'force-dynamic'
+
 // GET all trainings
 export async function GET(request: NextRequest) {
   try {
@@ -20,11 +22,11 @@ export async function GET(request: NextRequest) {
     }
     
     const trainings = await Training.find(query).sort({ date: -1 })
-    return NextResponse.json(trainings)
+    return NextResponse.json({ trainings })
   } catch (error) {
     console.error('Failed to fetch trainings:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch trainings' },
+      { error: 'Failed to fetch trainings', trainings: [] },
       { status: 500 }
     )
   }
@@ -60,9 +62,10 @@ export async function PUT(request: NextRequest) {
   try {
     await connectToDatabase()
     const body = await request.json()
-    const { id, ...updateData } = body
+    const { id, _id, ...updateData } = body
+    const trainingId = id || _id
     
-    if (!id) {
+    if (!trainingId) {
       return NextResponse.json(
         { error: 'Training ID is required' },
         { status: 400 }
@@ -70,7 +73,7 @@ export async function PUT(request: NextRequest) {
     }
     
     const training = await Training.findByIdAndUpdate(
-      id,
+      trainingId,
       updateData,
       { new: true, runValidators: true }
     )
@@ -100,16 +103,16 @@ export async function DELETE(request: NextRequest) {
   try {
     await connectToDatabase()
     const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const trainingId = searchParams.get('id') || searchParams.get('_id')
     
-    if (!id) {
+    if (!trainingId) {
       return NextResponse.json(
         { error: 'Training ID is required' },
         { status: 400 }
       )
     }
     
-    const training = await Training.findByIdAndDelete(id)
+    const training = await Training.findByIdAndDelete(trainingId)
     
     if (!training) {
       return NextResponse.json(

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { 
   Stethoscope, Users, Mic, Heart, GraduationCap, Youtube, Facebook, 
   Linkedin, Instagram, Mail, Phone, MapPin, ChevronRight, Play, 
-  Award, BookOpen, Activity, Globe, Send, Star 
+  Award, BookOpen, Activity, Globe, Send, Star, Building2
 } from 'lucide-react'
 import { Logo } from '@/components/Logo'
 import { FadeInUp, FadeInLeft, FadeInRight, ScaleIn, StaggerContainer, StaggerItem, HoverScale } from '@/components/Animations'
@@ -50,8 +50,10 @@ interface SponsorData {
 }
 
 
+import { initialSponsors } from '@/lib/sponsors-data'
+
 export default function PartnersSection() {
-  const [sponsors, setSponsors] = useState<SponsorData[]>([])
+  const [sponsors, setSponsors] = useState<SponsorData[]>(initialSponsors)
   const [loading, setLoading] = useState(true)
   const [activeType, setActiveType] = useState('all')
   const [expandedSponsor, setExpandedSponsor] = useState<string | null>(null)
@@ -60,8 +62,12 @@ export default function PartnersSection() {
     async function fetchSponsors() {
       try {
         const response = await fetch('/api/sponsors')
-        const data = await response.json()
-        setSponsors(data.sponsors || [])
+        if (response.ok) {
+          const data = await response.json()
+          if (data.sponsors && data.sponsors.length > 0) {
+            setSponsors(data.sponsors)
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch sponsors:', error)
       } finally {
@@ -75,26 +81,13 @@ export default function PartnersSection() {
     setExpandedSponsor(expandedSponsor === sponsorId ? null : sponsorId)
   }
 
-  if (loading) {
-    return (
-      <section className="section-padding bg-gradient-to-br from-amber-50 to-orange-50">
-        <div className="container-custom">
-          <div className="flex items-center justify-center py-12">
-            <div className="w-10 h-10 border-4 border-amber-200 border-t-amber-600 rounded-full animate-spin"></div>
-          </div>
-        </div>
-      </section>
-    )
-  }
-
-  if (sponsors.length === 0) return null
-
   const filteredSponsors = activeType === 'all' 
     ? sponsors 
     : sponsors.filter(s => s.programType === activeType)
 
   const programTypes = [
     { id: 'all', name: 'All Programs' },
+    { id: 'regular', name: 'Regular Programs' },
     { id: 'holiday', name: 'Holiday Programs' },
     { id: 'charity', name: 'Charity Programs' },
     { id: 'special', name: 'Special Events' },
@@ -136,18 +129,25 @@ export default function PartnersSection() {
         </FadeInUp>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredSponsors.map((sponsor, index) => {
-            const videoThumbnail = getYouTubeThumbnail(sponsor.episodeUrl)
-            const displayImage = videoThumbnail || sponsor.logo
-            
-            return (
-              <motion.div
-                key={sponsor._id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all flex flex-col"
-              >
+          {filteredSponsors.length === 0 ? (
+            <div className="col-span-full text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <Building2 className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Partners Found</h3>
+              <p className="text-gray-500">We are currently updating our partner list for this category.</p>
+            </div>
+          ) : (
+            filteredSponsors.map((sponsor, index) => {
+              const videoThumbnail = getYouTubeThumbnail(sponsor.episodeUrl)
+              const displayImage = videoThumbnail || sponsor.logo
+              
+              return (
+                <motion.div
+                  key={sponsor._id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all flex flex-col"
+                >
                 {/* Video Thumbnail as Main Image */}
                 <div className="relative aspect-video overflow-hidden bg-gradient-to-br from-gray-50 to-gray-100">
                   <img
@@ -282,8 +282,9 @@ export default function PartnersSection() {
                 </div>
               </motion.div>
             )
-          })}
-        </div>
+          })
+        )}
+      </div>
 
         {/* Call to Action for potential sponsors */}
         <FadeInUp delay={0.3} className="mt-12">

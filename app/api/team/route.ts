@@ -1,11 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getTeamMembers, addTeamMember } from '@/lib/db'
+import { connectToDatabase } from '@/lib/db'
+import TeamMember from '@/lib/models/TeamMember'
 import { requireAuth } from '@/lib/auth-middleware'
+import { doctors as initialDoctors } from '@/lib/doctors-data'
+
+export const dynamic = 'force-dynamic'
 
 // GET all team members
 export async function GET() {
-  const team = getTeamMembers()
-  return NextResponse.json({ team })
+  try {
+    try {
+      await connectToDatabase()
+    } catch (dbError) {
+      console.error('Database connection failed in Team API, using static fallback:', dbError)
+      return NextResponse.json({ team: initialDoctors, source: 'static' })
+    }
+    
+    let team = await TeamMember.find().sort({ order: 1, createdAt: -1 })
+    
+    // Auto-seed or fallback if empty
+    if (team.length === 0) {
+      return NextResponse.json({ team: initialDoctors, source: 'static' })
+    }
+    
+    return NextResponse.json({ team })
+  } catch (error) {
+    console.error('API Error (GET /api/team):', error)
+    return NextResponse.json({ team: initialDoctors, error: 'Failed to fetch team, using fallback' })
+  }
 }
 
 // POST new team member (admin only)
@@ -14,31 +36,21 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
+    await connectToDatabase()
     const body = await request.json()
-    const { name, credentials, role, tagline, specialties, education, experience, image, color, socialLinks } = body
 
-    if (!name || !credentials || !role) {
+    if (!body.name || !body.role) {
       return NextResponse.json(
-        { error: 'Name, credentials, and role are required' },
+        { error: 'Name and role are required' },
         { status: 400 }
       )
     }
 
-    const member = addTeamMember({
-      name,
-      credentials,
-      role,
-      tagline: tagline || '',
-      specialties: specialties || [],
-      education: education || [],
-      experience: experience || '',
-      image: image || null,
-      color: color || 'from-primary-500 to-primary-600',
-      socialLinks: socialLinks || {}
-    })
+    const member = await TeamMember.create(body)
 
     return NextResponse.json({ success: true, member })
   } catch (error) {
+    console.error('Error adding team member:', error)
     return NextResponse.json(
       { error: 'Failed to add team member' },
       { status: 500 }

@@ -56,7 +56,7 @@ export default function DocumentariesPage() {
       const response = await fetch('/api/documentaries')
       if (response.ok) {
         const data = await response.json()
-        setDocumentaries(data)
+        setDocumentaries(data.documentaries || [])
       }
     } catch (error) {
       console.error('Failed to fetch documentaries:', error)

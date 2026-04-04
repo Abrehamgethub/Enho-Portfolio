@@ -38,7 +38,7 @@ export default function DocumentariesSection() {
         const response = await fetch('/api/documentaries')
         if (response.ok) {
           const data = await response.json()
-          setDocumentaries(data.slice(0, 6)) // Show max 6 documentaries
+          setDocumentaries(data.documentaries?.slice(0, 6) || []) // Show max 6 documentaries
         }
       } catch (error) {
         console.error('Failed to fetch documentaries:', error)
@@ -50,7 +50,7 @@ export default function DocumentariesSection() {
   }, [])
 
   const featuredDocumentaries = documentaries.filter(d => d.featured)
-  const releasedDocumentaries = documentaries.filter(d => !d.featured && d.status === 'Released')
+  const otherDocumentaries = documentaries.filter(d => !d.featured)
 
   return (
     <section className="section-padding bg-white">
@@ -150,12 +150,12 @@ export default function DocumentariesSection() {
               </StaggerContainer>
             )}
 
-            {/* Released Documentaries */}
-            {releasedDocumentaries.length > 0 && (
+            {/* Other Documentaries */}
+            {otherDocumentaries.length > 0 && (
               <div className="bg-gray-50 rounded-2xl p-6 md:p-8">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">More Documentaries</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-6">Explore All Documentaries</h3>
                 <div className="grid md:grid-cols-2 gap-4">
-                  {releasedDocumentaries.map((doc, index) => (
+                  {otherDocumentaries.map((doc, index) => (
                     <motion.div
                       key={doc._id}
                       initial={{ opacity: 0, y: 20 }}

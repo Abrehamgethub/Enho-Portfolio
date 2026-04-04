@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from 'mongoose'
 
 export interface IGuest extends Document {
+  id?: string // Slug used for routing
   name: string
   nameAmharic?: string
   title: string // e.g., "Dr.", "Professor", etc.
@@ -17,6 +18,7 @@ export interface IGuest extends Document {
 }
 
 const GuestSchema = new Schema<IGuest>({
+  id: { type: String, unique: true, sparse: true },
   name: { type: String, required: true },
   nameAmharic: { type: String },
   title: { type: String, default: '' },

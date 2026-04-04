@@ -9,6 +9,7 @@ import {
 
 interface Guest {
   _id: string
+  id?: string // Slug for identifier
   name: string
   nameAmharic?: string
   title: string
@@ -49,6 +50,7 @@ export default function GuestsPage() {
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
   
   const [formData, setFormData] = useState({
+    id: '',
     name: '',
     nameAmharic: '',
     title: '',
@@ -136,6 +138,7 @@ export default function GuestsPage() {
   function editGuest(guest: Guest) {
     setEditingGuest(guest)
     setFormData({
+      id: guest.id || '',
       name: guest.name,
       nameAmharic: guest.nameAmharic || '',
       title: guest.title,
@@ -154,6 +157,7 @@ export default function GuestsPage() {
 
   function resetForm() {
     setFormData({
+      id: '',
       name: '',
       nameAmharic: '',
       title: '',
@@ -229,6 +233,16 @@ export default function GuestsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ID / Slug (e.g., guest-name)</label>
+                <input
+                  type="text"
+                  value={formData.id}
+                  onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500"
+                  placeholder="Lowercase, no spaces"
+                />
+              </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Name (English)</label>

@@ -358,6 +358,17 @@ export default function TeamPage() {
               <div className="p-6 space-y-6">
                 {/* Basic Info */}
                 <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ID / Slug (Used in URL: /team/slug)</label>
+                    <input
+                      type="text"
+                      value={formData.id}
+                      onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                      className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
+                      placeholder="dr-name (lowercase, no spaces)"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Example: dr-melat</p>
+                  </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
                     <input

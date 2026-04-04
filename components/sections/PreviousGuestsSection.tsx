@@ -49,8 +49,10 @@ interface GuestData {
 }
 
 
+import { initialGuests } from '@/lib/guests-data'
+
 export default function PreviousGuestsSection() {
-  const [guests, setGuests] = useState<GuestData[]>([])
+  const [guests, setGuests] = useState<GuestData[]>(initialGuests)
   const [loading, setLoading] = useState(true)
   const [expandedGuest, setExpandedGuest] = useState<string | null>(null)
 
@@ -58,8 +60,12 @@ export default function PreviousGuestsSection() {
     async function fetchGuests() {
       try {
         const response = await fetch('/api/guests')
-        const data = await response.json()
-        setGuests(data.guests || [])
+        if (response.ok) {
+          const data = await response.json()
+          if (data.guests && data.guests.length > 0) {
+            setGuests(data.guests)
+          }
+        }
       } catch (error) {
         console.error('Failed to fetch guests:', error)
       } finally {
@@ -72,20 +78,6 @@ export default function PreviousGuestsSection() {
   const toggleGuestDetails = (guestId: string) => {
     setExpandedGuest(expandedGuest === guestId ? null : guestId)
   }
-
-  if (loading) {
-    return (
-      <section className="section-padding bg-gradient-to-br from-indigo-50 to-purple-50">
-        <div className="container-custom">
-          <div className="flex items-center justify-center py-12">
-            <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
-          </div>
-        </div>
-      </section>
-    )
-  }
-
-  if (guests.length === 0) return null
 
   return (
     <section className="section-padding bg-gradient-to-br from-indigo-50 to-purple-50">
@@ -104,19 +96,27 @@ export default function PreviousGuestsSection() {
         </FadeInUp>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {guests.map((guest, index) => {
-            const videoThumbnail = getYouTubeThumbnail(guest.episodeUrl)
-            const photo = String(guest.photo || '').trim()
-            const displayImage = photo || videoThumbnail || '/logo.png'
-            
-            return (
-              <motion.div
-                key={guest._id}
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all flex flex-col"
-              >
+          {guests.length === 0 ? (
+            <div className="col-span-full text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
+              <Users className="w-12 h-12 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Guests Found</h3>
+              <p className="text-gray-500">Wait for our upcoming guests or check back later!</p>
+            </div>
+          ) : (
+            guests.map((guest, index) => {
+              const videoThumbnail = getYouTubeThumbnail(guest.episodeUrl)
+              const photo = String(guest.photo || '').trim()
+              const displayImage = photo || videoThumbnail || '/logo.png'
+              
+              return (
+                <motion.div
+                  key={guest._id}
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-xl transition-all flex flex-col"
+                >
+                  {/* ... rest of guest mapping remains same ... */}
                 {/* Video Thumbnail as Main Image */}
                 <div className="relative aspect-video overflow-hidden">
                   <img
@@ -236,9 +236,10 @@ export default function PreviousGuestsSection() {
                     )}
                   </div>
                 </div>
-              </motion.div>
-            )
-          })}
+                </motion.div>
+              )
+            })
+          )}
         </div>
       </div>
     </section>

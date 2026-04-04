@@ -43,7 +43,13 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
+    try {
+      await connectDB()
+    } catch (dbError) {
+      console.error('Database connection failed during update posting:', dbError)
+      return NextResponse.json({ error: 'Database unavailable. Please try again later.' }, { status: 503 })
+    }
+    
     const body = await request.json()
     
     const update = await Update.create({
@@ -51,7 +57,6 @@ export async function POST(request: NextRequest) {
       emoji: body.emoji || '📢',
       active: true
     })
-    
     
     return NextResponse.json({ 
       success: true, 

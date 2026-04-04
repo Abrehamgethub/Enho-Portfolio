@@ -38,7 +38,7 @@ export default function TrainingsSection() {
         const response = await fetch('/api/trainings')
         if (response.ok) {
           const data = await response.json()
-          setTrainings(data.slice(0, 6)) // Show max 6 trainings
+          setTrainings(data.trainings?.slice(0, 6) || []) // Show max 6 trainings
         }
       } catch (error) {
         console.error('Failed to fetch trainings:', error)
@@ -49,8 +49,11 @@ export default function TrainingsSection() {
     fetchTrainings()
   }, [])
 
-  const featuredTrainings = trainings.filter(t => t.featured)
-  const upcomingTrainings = trainings.filter(t => !t.featured && t.status === 'Upcoming')
+  // Show all trainings, sorted by date (newest first)
+  const sortedTrainings = [...trainings].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+  
+  const featuredTrainings = sortedTrainings.filter(t => t.featured)
+  const otherTrainings = sortedTrainings.filter(t => !t.featured)
 
   return (
     <section className="section-padding bg-gray-50">
@@ -149,12 +152,12 @@ export default function TrainingsSection() {
               </StaggerContainer>
             )}
 
-            {/* Upcoming Trainings */}
-            {upcomingTrainings.length > 0 && (
+            {/* Other Trainings */}
+            {otherTrainings.length > 0 && (
               <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Upcoming Programs</h3>
+                <h3 className="text-xl font-bold text-gray-900 mb-6">Explore Our Programs</h3>
                 <div className="space-y-4">
-                  {upcomingTrainings.map((training, index) => (
+                  {otherTrainings.map((training, index) => (
                     <motion.div
                       key={training._id}
                       initial={{ opacity: 0, x: -20 }}

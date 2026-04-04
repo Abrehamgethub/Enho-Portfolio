@@ -3,6 +3,8 @@ import Documentary from '@/lib/models/Documentary'
 import { connectToDatabase } from '@/lib/db'
 import { requireAuth } from '@/lib/auth-middleware'
 
+export const dynamic = 'force-dynamic'
+
 // GET all documentaries
 export async function GET(request: NextRequest) {
   try {
@@ -20,11 +22,11 @@ export async function GET(request: NextRequest) {
     }
     
     const documentaries = await Documentary.find(query).sort({ releaseDate: -1 })
-    return NextResponse.json(documentaries)
+    return NextResponse.json({ documentaries })
   } catch (error) {
     console.error('Failed to fetch documentaries:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch documentaries' },
+      { error: 'Failed to fetch documentaries', documentaries: [] },
       { status: 500 }
     )
   }
@@ -60,9 +62,10 @@ export async function PUT(request: NextRequest) {
   try {
     await connectToDatabase()
     const body = await request.json()
-    const { id, ...updateData } = body
+    const { id, _id, ...updateData } = body
+    const docId = id || _id
     
-    if (!id) {
+    if (!docId) {
       return NextResponse.json(
         { error: 'Documentary ID is required' },
         { status: 400 }
@@ -70,7 +73,7 @@ export async function PUT(request: NextRequest) {
     }
     
     const documentary = await Documentary.findByIdAndUpdate(
-      id,
+      docId,
       updateData,
       { new: true, runValidators: true }
     )
@@ -100,16 +103,16 @@ export async function DELETE(request: NextRequest) {
   try {
     await connectToDatabase()
     const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const docId = searchParams.get('id') || searchParams.get('_id')
     
-    if (!id) {
+    if (!docId) {
       return NextResponse.json(
         { error: 'Documentary ID is required' },
         { status: 400 }
       )
     }
     
-    const documentary = await Documentary.findByIdAndDelete(id)
+    const documentary = await Documentary.findByIdAndDelete(docId)
     
     if (!documentary) {
       return NextResponse.json(

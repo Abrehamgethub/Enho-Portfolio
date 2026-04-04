@@ -54,7 +54,7 @@ export default function TrainingsPage() {
       const response = await fetch('/api/trainings')
       if (response.ok) {
         const data = await response.json()
-        setTrainings(data)
+        setTrainings(data.trainings || [])
       }
     } catch (error) {
       console.error('Failed to fetch trainings:', error)

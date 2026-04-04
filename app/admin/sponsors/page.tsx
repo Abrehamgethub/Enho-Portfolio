@@ -9,6 +9,7 @@ import {
 
 interface Sponsor {
   _id: string
+  id?: string // Slug for identifier
   name: string
   nameAmharic?: string
   logo: string
@@ -39,6 +40,7 @@ export default function SponsorsPage() {
   const [filterType, setFilterType] = useState('all')
   
   const [formData, setFormData] = useState({
+    id: '',
     name: '',
     nameAmharic: '',
     logo: '',
@@ -130,6 +132,7 @@ export default function SponsorsPage() {
   function editSponsor(sponsor: Sponsor) {
     setEditingSponsor(sponsor)
     setFormData({
+      id: sponsor.id || '',
       name: sponsor.name,
       nameAmharic: sponsor.nameAmharic || '',
       logo: sponsor.logo,
@@ -147,6 +150,7 @@ export default function SponsorsPage() {
 
   function resetForm() {
     setFormData({
+      id: '',
       name: '',
       nameAmharic: '',
       logo: '',
@@ -264,6 +268,16 @@ export default function SponsorsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">ID / Slug (e.g., sponsor-name)</label>
+                <input
+                  type="text"
+                  value={formData.id}
+                  onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                  className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
+                  placeholder="Lowercase, no spaces"
+                />
+              </div>
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
