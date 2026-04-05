@@ -18,7 +18,7 @@ import { doctors as staticDoctors } from '@/lib/doctors-data'
 
 export default function TeamSection() {
   const [doctors, setDoctors] = useState(staticDoctors)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     async function fetchTeam() {
@@ -39,16 +39,8 @@ export default function TeamSection() {
     fetchTeam()
   }, [])
 
-  if (loading) {
-    return (
-      <section className="section-padding bg-gray-50 min-h-[400px] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
-      </section>
-    )
-  }
-
   return (
-    <section className="section-padding bg-gray-50">
+    <section className="py-8 md:py-12 bg-gray-50">
       <div className="container-custom">
         {/* Header */}
         <FadeInUp className="text-center mb-12 md:mb-16">
@@ -90,12 +82,12 @@ export default function TeamSection() {
                     className="group relative bg-white rounded-3xl overflow-hidden shadow-xl shadow-gray-200/50 h-full flex flex-col"
                   >
                     {/* Photo Section */}
-                    <div className="relative aspect-[3/4] overflow-hidden bg-white">
+                    <div className="relative aspect-[4/5] md:aspect-[3/4] overflow-hidden bg-gray-100">
                       {doctor.image ? (
                         <img 
                           src={doctor.image} 
                           alt={doctor.name}
-                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500 bg-white"
+                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <div className={`w-full h-full bg-gradient-to-br ${color} opacity-10 flex items-center justify-center`}>

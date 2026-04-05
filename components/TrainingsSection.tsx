@@ -12,6 +12,7 @@ import {
   ChevronRight,
   ArrowRight
 } from 'lucide-react'
+import { initialTrainings } from '@/lib/trainings-data'
 
 interface Training {
   _id: string
@@ -29,8 +30,8 @@ interface Training {
 }
 
 export default function TrainingsSection() {
-  const [trainings, setTrainings] = useState<Training[]>([])
-  const [loading, setLoading] = useState(true)
+  const [trainings, setTrainings] = useState<Training[]>(initialTrainings)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     async function fetchTrainings() {

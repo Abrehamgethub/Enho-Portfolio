@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FadeInUp, StaggerContainer, StaggerItem } from '@/components/Animations'
+import { initialDocumentaries } from '@/lib/documentaries-data'
 import { 
   Play, 
   Globe, 
@@ -29,8 +30,8 @@ interface Documentary {
 }
 
 export default function DocumentariesSection() {
-  const [documentaries, setDocumentaries] = useState<Documentary[]>([])
-  const [loading, setLoading] = useState(true)
+  const [documentaries, setDocumentaries] = useState<Documentary[]>(initialDocumentaries)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     async function fetchDocumentaries() {

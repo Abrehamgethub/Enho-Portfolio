@@ -33,6 +33,22 @@ export async function GET(request: NextRequest) {
       null
     )
 
+    const count = await Documentary.countDocuments();
+
+    if (count === 0) {
+      try {
+        const toInsert = initialDocumentaries.map(d => {
+          const { id, _id, ...rest } = d as any;
+          return rest;
+        });
+        const inserted = await Documentary.insertMany(toInsert);
+        return NextResponse.json({ documentaries: inserted, source: 'db-seeded' });
+      } catch (e) {
+        console.error('Documentaries seed error:', e);
+        return NextResponse.json({ documentaries: initialDocumentaries, source: 'static' });
+      }
+    }
+
     if (!documentaries) {
       return NextResponse.json({ documentaries: initialDocumentaries, source: 'static' })
     }

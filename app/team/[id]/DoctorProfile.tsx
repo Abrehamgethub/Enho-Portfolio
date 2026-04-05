@@ -56,7 +56,7 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
               </div>
             </Link>
             <Link 
-              href="/#team" 
+              href="/team" 
               className="inline-flex items-center gap-2 text-gray-600 hover:text-primary-500 transition-colors text-sm font-medium"
             >
               <ArrowLeft className="w-4 h-4" />

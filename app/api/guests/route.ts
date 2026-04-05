@@ -21,7 +21,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ guests: initialGuests, source: 'static' })
     }
     if (count === 0) {
-      return NextResponse.json({ guests: initialGuests, source: 'static' })
+      try {
+        const toInsert = initialGuests.map(g => {
+          const { id, _id, ...rest } = g as any;
+          return rest;
+        });
+        const inserted = await Guest.insertMany(toInsert);
+        return NextResponse.json({ guests: inserted, source: 'db-seeded' });
+      } catch (e) {
+        console.error('Guests seed error:', e);
+        return NextResponse.json({ guests: initialGuests, source: 'static' });
+      }
     }
 
     const { searchParams } = new URL(request.url)

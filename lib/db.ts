@@ -142,100 +142,66 @@ export async function getStats() {
   }
 }
 
-// Update operations with in-memory fallback
 export async function getUpdates(): Promise<Update[]> {
-  if (await useMongoDB()) {
-    try {
-      const docs = await UpdateModel.find({ active: true }).sort({ createdAt: -1 })
-      return docs.map((doc: IUpdate) => ({
-        id: doc._id.toString(),
-        text: doc.text,
-        emoji: doc.emoji,
-        createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
-        active: doc.active
-      }))
-    } catch (error) {
-      console.error('MongoDB getUpdates failed, using in-memory fallback:', error)
-    }
+  try {
+    const conn = await connectToDatabase()
+    if (!conn) return []
+    const docs = await withTimeout(UpdateModel.find({ active: true }).sort({ createdAt: -1 }).exec(), 4000, null)
+    if (!docs) return []
+    return docs.map((doc: IUpdate) => ({
+      id: doc._id.toString(),
+      text: doc.text,
+      emoji: doc.emoji,
+      createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
+      active: doc.active
+    }))
+  } catch (error) {
+    console.error('getUpdates failed:', error)
+    return []
   }
-  // Return in-memory updates sorted by date (newest first)
-  return [...inMemoryUpdates]
-    .filter(u => u.active)
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 }
 
 export async function addUpdate(data: Omit<Update, 'id' | 'createdAt'>): Promise<Update> {
-  if (await useMongoDB()) {
-    try {
-      const doc = await UpdateModel.create({
-        text: data.text,
-        emoji: data.emoji || '📢',
-        active: data.active !== false
-      })
-      return {
-        id: doc._id.toString(),
-        text: doc.text,
-        emoji: doc.emoji,
-        createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
-        active: doc.active
-      }
-    } catch (error) {
-      console.error('MongoDB addUpdate failed, using in-memory fallback:', error)
-    }
-  }
-  
-  // Fallback to in-memory
-  const update: Update = {
-    ...data,
-    id: crypto.randomUUID(),
-    createdAt: new Date().toISOString(),
+  await connectToDatabase()
+  const doc = await UpdateModel.create({
+    text: data.text,
     emoji: data.emoji || '📢',
     active: data.active !== false
+  })
+  return {
+    id: doc._id.toString(),
+    text: doc.text,
+    emoji: doc.emoji,
+    createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
+    active: doc.active
   }
-  inMemoryUpdates.push(update)
-  console.log('Added update to in-memory storage:', update.id)
-  return update
 }
 
 export async function updateUpdate(id: string, data: Partial<Update>): Promise<Update | null> {
-  if (await useMongoDB()) {
-    try {
-      const doc = await UpdateModel.findByIdAndUpdate(id, data, { new: true })
-      if (!doc) return null
-      return {
-        id: doc._id.toString(),
-        text: doc.text,
-        emoji: doc.emoji,
-        createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
-        active: doc.active
-      }
-    } catch (error) {
-      console.error('MongoDB updateUpdate failed, using in-memory fallback:', error)
+  await connectToDatabase()
+  try {
+    const doc = await UpdateModel.findByIdAndUpdate(id, data, { new: true })
+    if (!doc) return null
+    return {
+      id: doc._id.toString(),
+      text: doc.text,
+      emoji: doc.emoji,
+      createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
+      active: doc.active
     }
+  } catch (error) {
+    console.error('updateUpdate failed:', error)
+    return null
   }
-  
-  // Fallback to in-memory
-  const index = inMemoryUpdates.findIndex(u => u.id === id)
-  if (index === -1) return null
-  inMemoryUpdates[index] = { ...inMemoryUpdates[index], ...data }
-  console.log('Updated update in in-memory storage:', id)
-  return inMemoryUpdates[index]
 }
 
 export async function deleteUpdate(id: string): Promise<boolean> {
-  if (await useMongoDB()) {
-    try {
-      const result = await UpdateModel.findByIdAndDelete(id)
-      return !!result
-    } catch (error) {
-      console.error('MongoDB deleteUpdate failed, using in-memory fallback:', error)
-    }
+  await connectToDatabase()
+  try {
+    const result = await UpdateModel.findByIdAndDelete(id)
+    return !!result
+  } catch (error) {
+    console.error('deleteUpdate failed:', error)
+    return false
   }
-  
-  // Fallback to in-memory
-  const index = inMemoryUpdates.findIndex(u => u.id === id)
-  if (index === -1) return false
-  inMemoryUpdates.splice(index, 1)
-  console.log('Deleted update from in-memory storage:', id)
-  return true
 }

@@ -27,11 +27,26 @@ export async function GET(request: NextRequest) {
       query.category = category
     }
     
+    const count = await Training.countDocuments(query)
     const trainings = await withTimeout(
       Training.find(query).sort({ date: -1 }).exec(),
       4000,
       null
     )
+
+    if (count === 0) {
+      try {
+        const toInsert = initialTrainings.map(t => {
+          const { id, _id, ...rest } = t as any;
+          return rest;
+        });
+        const inserted = await Training.insertMany(toInsert);
+        return NextResponse.json({ trainings: inserted, source: 'db-seeded' });
+      } catch (e) {
+        console.error('Trainings seed error:', e);
+        return NextResponse.json({ trainings: initialTrainings, source: 'static' });
+      }
+    }
 
     if (!trainings) {
       return NextResponse.json({ trainings: initialTrainings, source: 'static' })

@@ -142,7 +142,7 @@ export default function SponsorsPage() {
       programName: sponsor.programName,
       programDate: sponsor.programDate ? sponsor.programDate.split('T')[0] : '',
       episodeUrl: sponsor.episodeUrl || '',
-      photos: sponsor.photos.length > 0 ? sponsor.photos : [''],
+      photos: (sponsor.photos || []).length > 0 ? sponsor.photos : [''],
       featured: sponsor.featured
     })
     setShowForm(true)
@@ -510,10 +510,10 @@ export default function SponsorsPage() {
                     </div>
                   )}
                   
-                  {sponsor.photos.length > 0 && (
+                  {(sponsor.photos || []).length > 0 && (
                     <div className="flex items-center gap-1 text-gray-500 text-xs mt-1">
                       <ImageIcon className="w-3 h-3" />
-                      {sponsor.photos.length} photos
+                      {(sponsor.photos || []).length} photos
                     </div>
                   )}
                   

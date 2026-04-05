@@ -8,7 +8,7 @@ export default function TeamPage() {
   return (
     <main className="min-h-screen flex flex-col">
       <Navigation />
-      <div className="flex-1 pt-16 md:pt-20">
+      <div className="flex-1 pt-6 md:pt-10">
         <TeamSection />
         <ImpactSection />
         <CertificatesSection />

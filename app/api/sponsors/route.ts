@@ -20,7 +20,17 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ sponsors: initialSponsors, source: 'static' })
     }
     if (count === 0) {
-      return NextResponse.json({ sponsors: initialSponsors, source: 'static' })
+      try {
+        const toInsert = initialSponsors.map(s => {
+          const { id, _id, ...rest } = s as any;
+          return rest;
+        });
+        const inserted = await Sponsor.insertMany(toInsert);
+        return NextResponse.json({ sponsors: inserted, source: 'db-seeded' });
+      } catch (e) {
+        console.error('Sponsors seed error:', e);
+        return NextResponse.json({ sponsors: initialSponsors, source: 'static' });
+      }
     }
 
     const { searchParams } = new URL(request.url)
