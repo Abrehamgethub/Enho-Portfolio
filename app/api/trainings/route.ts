@@ -34,13 +34,15 @@ export async function GET(request: NextRequest) {
       null
     )
 
-    if (count === 0) {
+    const totalCount = await withTimeout(Training.countDocuments({}), 3000, 0)
+    
+    if (totalCount === 0) {
       try {
         const toInsert = initialTrainings.map(t => {
           const { id, _id, ...rest } = t as any;
           return rest;
         });
-        const inserted = await Training.insertMany(toInsert);
+        const inserted = await withTimeout(Training.insertMany(toInsert), 5000, []);
         return NextResponse.json({ trainings: inserted, source: 'db-seeded' });
       } catch (e) {
         console.error('Trainings seed error:', e);
@@ -48,14 +50,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (!trainings) {
-      return NextResponse.json({ trainings: initialTrainings, source: 'static' })
-    }
-
-    return NextResponse.json({ trainings: trainings.length > 0 ? trainings : initialTrainings })
+    return NextResponse.json({ 
+      trainings: trainings || [], 
+      source: trainings ? 'db' : 'static-fallback' 
+    })
   } catch (error) {
     console.error('Failed to fetch trainings:', error)
-    return NextResponse.json({ trainings: initialTrainings, source: 'static-fallback' })
+    return NextResponse.json({ trainings: initialTrainings, source: 'error-fallback' })
   }
 }
 
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     const training = new Training(body)
-    await training.save()
+    await withTimeout(training.save(), 5000, null)
     
     return NextResponse.json(training, { status: 201 })
   } catch (error) {
@@ -107,15 +108,19 @@ export async function PUT(request: NextRequest) {
       )
     }
     
-    const training = await Training.findByIdAndUpdate(
-      trainingId,
-      updateData,
-      { new: true, runValidators: true }
+    const training = await withTimeout(
+      Training.findByIdAndUpdate(
+        trainingId,
+        updateData,
+        { new: true, runValidators: true }
+      ),
+      5000,
+      null
     )
     
     if (!training) {
       return NextResponse.json(
-        { error: 'Training not found' },
+        { error: 'Training not found or update timed out' },
         { status: 404 }
       )
     }
@@ -151,11 +156,11 @@ export async function DELETE(request: NextRequest) {
       )
     }
     
-    const training = await Training.findByIdAndDelete(trainingId)
+    const training = await withTimeout(Training.findByIdAndDelete(trainingId), 5000, null)
     
     if (!training) {
       return NextResponse.json(
-        { error: 'Training not found' },
+        { error: 'Training not found or deletion timed out' },
         { status: 404 }
       )
     }

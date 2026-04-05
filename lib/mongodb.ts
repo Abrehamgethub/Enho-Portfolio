@@ -58,33 +58,42 @@ async function connectDB(): Promise<typeof mongoose | null> {
 // Helper: wrap any async DB operation with a timeout to prevent serverless hanging
 export async function withTimeout<T>(
   promise: Promise<T>,
-  timeoutMs: number = 4000,
-  fallback: T
+  timeoutMs: number = 5000,
+  fallback: T | null = null
 ): Promise<T> {
-  let timer: NodeJS.Timeout
-  const timeout = new Promise<T>((resolve) => {
+  let timer: NodeJS.Timeout | undefined;
+  
+  const timeoutPromise = new Promise<T>((_, reject) => {
     timer = setTimeout(() => {
-      console.warn(`⚠️ DB operation timed out after ${timeoutMs}ms, using fallback`)
-      resolve(fallback)
+      reject(new Error(`DB operation timed out after ${timeoutMs}ms`))
     }, timeoutMs)
   })
 
   try {
-    const result = await Promise.race([promise, timeout])
-    clearTimeout(timer!)
+    const result = await Promise.race([promise, timeoutPromise])
+    if (timer) clearTimeout(timer)
     return result
   } catch (error) {
-    clearTimeout(timer!)
-    console.error('DB operation failed, using fallback:', error)
-    return fallback
+    if (timer) clearTimeout(timer)
+    
+    // If it was a timeout error and we have a non-null fallback, return it
+    if (error instanceof Error && error.message.includes('timed out') && fallback !== null) {
+      console.warn(`⚠️ ${error.message} - using fallback`)
+      return fallback
+    }
+    
+    // Otherwise, rethrow to let the caller handle the failure (especially for writes)
+    console.error('❌ DB operation failed:', error)
+    throw error
   }
 }
 
-// Safe connectDB that never throws — returns null on failure
+// Safe connectDB that returns null on failure instead of throwing
 export async function safeConnectDB(): Promise<typeof mongoose | null> {
   try {
-    return await withTimeout(connectDB(), 4000, null)
-  } catch {
+    return await withTimeout(connectDB(), 5000, null)
+  } catch (err) {
+    console.error('Failed to safely connect to DB:', err)
     return null
   }
 }

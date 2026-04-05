@@ -82,19 +82,21 @@ export async function getMessage(id: string): Promise<Message | null> {
 
 export async function addMessage(data: Omit<Message, 'id' | 'date' | 'read'>): Promise<Message> {
   await connectToDatabase()
-  const doc = await MessageModel.create({
+  const doc = await withTimeout(MessageModel.create({
     name: data.name,
     email: data.email,
     subject: data.subject,
     message: data.message
-  })
+  }), 5000, null)
+  
+  if (!doc) throw new Error('Failed to save message to database')
   return docToMessage(doc)
 }
 
 export async function updateMessage(id: string, data: Partial<Message>): Promise<Message | null> {
   await connectToDatabase()
   try {
-    const doc = await MessageModel.findByIdAndUpdate(id, data, { new: true })
+    const doc = await withTimeout(MessageModel.findByIdAndUpdate(id, data, { new: true }), 5000, null)
     return doc ? docToMessage(doc) : null
   } catch {
     return null
@@ -104,7 +106,7 @@ export async function updateMessage(id: string, data: Partial<Message>): Promise
 export async function deleteMessage(id: string): Promise<boolean> {
   await connectToDatabase()
   try {
-    const result = await MessageModel.findByIdAndDelete(id)
+    const result = await withTimeout(MessageModel.findByIdAndDelete(id), 5000, null)
     return !!result
   } catch {
     return false
@@ -163,11 +165,14 @@ export async function getUpdates(): Promise<Update[]> {
 
 export async function addUpdate(data: Omit<Update, 'id' | 'createdAt'>): Promise<Update> {
   await connectToDatabase()
-  const doc = await UpdateModel.create({
+  const doc = await withTimeout(UpdateModel.create({
     text: data.text,
     emoji: data.emoji || '📢',
     active: data.active !== false
-  })
+  }), 5000, null)
+  
+  if (!doc) throw new Error('Failed to save update to database')
+  
   return {
     id: doc._id.toString(),
     text: doc.text,
@@ -180,7 +185,7 @@ export async function addUpdate(data: Omit<Update, 'id' | 'createdAt'>): Promise
 export async function updateUpdate(id: string, data: Partial<Update>): Promise<Update | null> {
   await connectToDatabase()
   try {
-    const doc = await UpdateModel.findByIdAndUpdate(id, data, { new: true })
+    const doc = await withTimeout(UpdateModel.findByIdAndUpdate(id, data, { new: true }), 5000, null)
     if (!doc) return null
     return {
       id: doc._id.toString(),
@@ -198,7 +203,7 @@ export async function updateUpdate(id: string, data: Partial<Update>): Promise<U
 export async function deleteUpdate(id: string): Promise<boolean> {
   await connectToDatabase()
   try {
-    const result = await UpdateModel.findByIdAndDelete(id)
+    const result = await withTimeout(UpdateModel.findByIdAndDelete(id), 5000, null)
     return !!result
   } catch (error) {
     console.error('deleteUpdate failed:', error)

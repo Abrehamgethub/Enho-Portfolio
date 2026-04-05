@@ -33,15 +33,15 @@ export async function GET(request: NextRequest) {
       null
     )
 
-    const count = await Documentary.countDocuments();
-
-    if (count === 0) {
+    const totalCount = await withTimeout(Documentary.countDocuments({}), 3000, 0)
+    
+    if (totalCount === 0) {
       try {
         const toInsert = initialDocumentaries.map(d => {
           const { id, _id, ...rest } = d as any;
           return rest;
         });
-        const inserted = await Documentary.insertMany(toInsert);
+        const inserted = await withTimeout(Documentary.insertMany(toInsert), 5000, []);
         return NextResponse.json({ documentaries: inserted, source: 'db-seeded' });
       } catch (e) {
         console.error('Documentaries seed error:', e);
@@ -49,14 +49,13 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (!documentaries) {
-      return NextResponse.json({ documentaries: initialDocumentaries, source: 'static' })
-    }
-
-    return NextResponse.json({ documentaries: documentaries.length > 0 ? documentaries : initialDocumentaries })
+    return NextResponse.json({ 
+      documentaries: documentaries || [], 
+      source: documentaries ? 'db' : 'static-fallback' 
+    })
   } catch (error) {
     console.error('Failed to fetch documentaries:', error)
-    return NextResponse.json({ documentaries: initialDocumentaries, source: 'static-fallback' })
+    return NextResponse.json({ documentaries: initialDocumentaries, source: 'error-fallback' })
   }
 }
 
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     
     const documentary = new Documentary(body)
-    await documentary.save()
+    await withTimeout(documentary.save(), 5000, null)
     
     return NextResponse.json(documentary, { status: 201 })
   } catch (error) {
@@ -108,15 +107,19 @@ export async function PUT(request: NextRequest) {
       )
     }
     
-    const documentary = await Documentary.findByIdAndUpdate(
-      docId,
-      updateData,
-      { new: true, runValidators: true }
+    const documentary = await withTimeout(
+      Documentary.findByIdAndUpdate(
+        docId,
+        updateData,
+        { new: true, runValidators: true }
+      ),
+      5000,
+      null
     )
     
     if (!documentary) {
       return NextResponse.json(
-        { error: 'Documentary not found' },
+        { error: 'Documentary not found or update timed out' },
         { status: 404 }
       )
     }
@@ -152,11 +155,11 @@ export async function DELETE(request: NextRequest) {
       )
     }
     
-    const documentary = await Documentary.findByIdAndDelete(docId)
+    const documentary = await withTimeout(Documentary.findByIdAndDelete(docId), 5000, null)
     
     if (!documentary) {
       return NextResponse.json(
-        { error: 'Documentary not found' },
+        { error: 'Documentary not found or deletion timed out' },
         { status: 404 }
       )
     }

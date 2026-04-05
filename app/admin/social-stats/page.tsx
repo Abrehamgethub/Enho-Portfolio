@@ -166,7 +166,7 @@ export default function SocialStatsPage() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="grid md:grid-cols-6 gap-4 p-4 bg-gray-50 rounded-lg"
+              className="grid gap-4 p-4 bg-gray-50 rounded-lg sm:grid-cols-2 lg:grid-cols-6"
             >
               {/* Platform */}
               <div>
@@ -205,7 +205,7 @@ export default function SocialStatsPage() {
               </div>
 
               {/* URL */}
-              <div>
+              <div className="sm:col-span-2 lg:col-span-1">
                 <label className="block text-sm font-medium text-gray-700 mb-1">URL</label>
                 <input
                   type="url"
@@ -218,7 +218,7 @@ export default function SocialStatsPage() {
 
               {/* Color */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Color (CSS class)</label>
                 <input
                   type="text"
                   value={stat.color}
@@ -230,16 +230,16 @@ export default function SocialStatsPage() {
 
               {/* Preview */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Preview</label>
-                <div className="flex items-center gap-2">
-                  <div className={`${stat.color} p-2 rounded-lg`}>
+                <label className="block text-sm font-medium text-gray-700 mb-1 pb-2">Preview</label>
+                <div className="flex items-center gap-3">
+                  <div className={`${stat.color} p-2.5 rounded-lg shadow-sm`}>
                     {getIconComponent(stat.icon)}
                   </div>
                   <a
                     href={stat.url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-primary-500 hover:text-primary-600"
+                    className="p-2 text-primary-500 hover:text-primary-600 hover:bg-white rounded-lg transition-colors border border-transparent hover:border-gray-200"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>

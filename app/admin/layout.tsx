@@ -173,7 +173,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4 space-y-1.5">
+          <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
             <p className="px-4 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Menu</p>
             {navItems.map((item) => {
               const isActive = pathname === item.href

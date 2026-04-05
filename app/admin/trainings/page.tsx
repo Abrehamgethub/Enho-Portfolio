@@ -266,10 +266,14 @@ function TrainingForm({
   const [formData, setFormData] = useState(training)
   const [saving, setSaving] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
-    onSave(formData)
+    try {
+      await onSave(formData)
+    } finally {
+      setSaving(false)
+    }
   }
 
   function handleChange(field: keyof Training, value: any) {
