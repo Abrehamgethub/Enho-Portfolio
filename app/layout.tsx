@@ -15,7 +15,6 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div id="deployment-marker-VERIFIED_04052026" style={{ display: 'none' }} />
         {children}
       </body>
     </html>
