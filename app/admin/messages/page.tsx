@@ -70,27 +70,51 @@ export default function MessagesPage() {
   })
 
   const markAsRead = async (id: string) => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      await fetch(`/api/messages/${id}`, {
+      const response = await fetch(`/api/messages/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ markAsRead: true })
+        body: JSON.stringify({ markAsRead: true }),
+        signal: controller.signal
       })
-      setMessages(messages.map(msg => 
-        msg.id === id ? { ...msg, read: true } : msg
-      ))
+      
+      clearTimeout(timeoutId)
+
+      if (response.ok) {
+        setMessages(messages.map(msg => 
+          msg.id === id ? { ...msg, read: true } : msg
+        ))
+      }
     } catch (error) {
+      clearTimeout(timeoutId)
       console.error('Failed to mark as read:', error)
     }
   }
 
   const deleteMessage = async (id: string) => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      await fetch(`/api/messages/${id}`, { method: 'DELETE' })
-      setMessages(messages.filter(msg => msg.id !== id))
-      setShowDeleteConfirm(null)
-      if (selectedMessage?.id === id) setSelectedMessage(null)
+      const response = await fetch(`/api/messages/${id}`, { 
+        method: 'DELETE',
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+
+      if (response.ok) {
+        setMessages(messages.filter(msg => msg.id !== id))
+        setShowDeleteConfirm(null)
+        if (selectedMessage?.id === id) setSelectedMessage(null)
+      } else {
+        console.error('Failed to delete message: Status', response.status)
+      }
     } catch (error) {
+      clearTimeout(timeoutId)
       console.error('Failed to delete message:', error)
     }
   }
@@ -98,6 +122,9 @@ export default function MessagesPage() {
   const sendReply = async () => {
     if (!selectedMessage || !replyText.trim()) return
     
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     setSendingReply(true)
     setReplyStatus(null)
     
@@ -110,10 +137,12 @@ export default function MessagesPage() {
           subject: selectedMessage.subject,
           replyText: replyText,
           originalMessage: selectedMessage.message
-        })
+        }),
+        signal: controller.signal
       })
       
-      const data = await res.json()
+      clearTimeout(timeoutId)
+      const data = await res.json().catch(() => ({}))
       
       if (res.ok) {
         setReplyStatus({ type: 'success', message: 'Reply sent successfully!' })
@@ -125,8 +154,16 @@ export default function MessagesPage() {
       } else {
         setReplyStatus({ type: 'error', message: data.error || 'Failed to send reply' })
       }
-    } catch (error) {
-      setReplyStatus({ type: 'error', message: 'Network error. Please try again.' })
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      console.error('Reply error:', error)
+      const isTimeout = error.name === 'AbortError'
+      setReplyStatus({ 
+        type: 'error', 
+        message: isTimeout 
+          ? 'Request timed out after 10s. The email service might be slow.' 
+          : 'Network error. Please try again.' 
+      })
     } finally {
       setSendingReply(false)
     }

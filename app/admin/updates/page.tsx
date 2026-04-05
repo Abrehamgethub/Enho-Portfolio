@@ -49,40 +49,76 @@ export default function UpdatesPage() {
     e.preventDefault()
     if (!newText.trim()) return
     
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     setSaving(true)
     try {
       const response = await fetch('/api/updates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: newText, emoji: selectedEmoji })
+        body: JSON.stringify({ text: newText, emoji: selectedEmoji }),
+        signal: controller.signal
       })
       
+      clearTimeout(timeoutId)
+
       if (response.ok) {
         setNewText('')
         setSelectedEmoji('📢')
         setMessage({ type: 'success', text: 'Update posted successfully!' })
         fetchUpdates()
       } else {
-        setMessage({ type: 'error', text: 'Failed to post update' })
+        const errorData = await response.json().catch(() => ({}))
+        setMessage({ type: 'error', text: errorData.error || 'Failed to post update' })
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to post update' })
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      console.error('Failed to post update:', error)
+      const isTimeout = error.name === 'AbortError'
+      setMessage({ 
+        type: 'error', 
+        text: isTimeout 
+          ? 'Request timed out after 10s. The database might be unreachable.' 
+          : 'Failed to post update' 
+      })
     } finally {
       setSaving(false)
-      setTimeout(() => setMessage(null), 3000)
+      setTimeout(() => setMessage(null), 5000)
     }
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Delete this update?')) return
     
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      await fetch(`/api/updates/${id}`, { method: 'DELETE' })
-      setUpdates(updates.filter(u => u.id !== id))
-      setMessage({ type: 'success', text: 'Update deleted' })
-      setTimeout(() => setMessage(null), 3000)
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to delete' })
+      const response = await fetch(`/api/updates/${id}`, { 
+        method: 'DELETE',
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+
+      if (response.ok) {
+        setUpdates(updates.filter(u => u.id !== id))
+        setMessage({ type: 'success', text: 'Update deleted successfully' })
+      } else {
+        const errorData = await response.json().catch(() => ({}))
+        setMessage({ type: 'error', text: errorData.error || 'Failed to delete' })
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      console.error('Failed to delete update:', error)
+      const isTimeout = error.name === 'AbortError'
+      setMessage({ 
+        type: 'error', 
+        text: isTimeout ? 'Request timed out after 10s.' : 'Failed to delete' 
+      })
+    } finally {
+      setTimeout(() => setMessage(null), 5000)
     }
   }
 

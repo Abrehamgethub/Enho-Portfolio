@@ -68,20 +68,20 @@ export async function POST(request: NextRequest) {
   try {
     const conn = await safeConnectDB()
     if (!conn) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+      return NextResponse.json({ error: 'Database connection timeout. Please check MongoDB Atlas IP whitelisting.' }, { status: 503 })
     }
 
     const body = await request.json()
-    
     const training = new Training(body)
-    await withTimeout(training.save(), 5000, null)
+    await withTimeout(training.save(), 5000)
     
     return NextResponse.json(training, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to create training:', error)
+    const isTimeout = error.message?.includes('timed out')
     return NextResponse.json(
-      { error: 'Failed to create training' },
-      { status: 500 }
+      { error: isTimeout ? 'Database write timed out' : 'Failed to create training' },
+      { status: isTimeout ? 504 : 500 }
     )
   }
 }
@@ -94,7 +94,7 @@ export async function PUT(request: NextRequest) {
   try {
     const conn = await safeConnectDB()
     if (!conn) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+      return NextResponse.json({ error: 'Database connection timeout' }, { status: 503 })
     }
 
     const body = await request.json()
@@ -102,35 +102,25 @@ export async function PUT(request: NextRequest) {
     const trainingId = id || _id
     
     if (!trainingId) {
-      return NextResponse.json(
-        { error: 'Training ID is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Training ID is required' }, { status: 400 })
     }
     
     const training = await withTimeout(
-      Training.findByIdAndUpdate(
-        trainingId,
-        updateData,
-        { new: true, runValidators: true }
-      ),
-      5000,
-      null
+      Training.findByIdAndUpdate(trainingId, updateData, { new: true, runValidators: true }),
+      5000
     )
     
     if (!training) {
-      return NextResponse.json(
-        { error: 'Training not found or update timed out' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Training not found' }, { status: 404 })
     }
     
     return NextResponse.json(training)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to update training:', error)
+    const isTimeout = error.message?.includes('timed out')
     return NextResponse.json(
-      { error: 'Failed to update training' },
-      { status: 500 }
+      { error: isTimeout ? 'Database update timed out' : 'Failed to update training' },
+      { status: isTimeout ? 504 : 500 }
     )
   }
 }

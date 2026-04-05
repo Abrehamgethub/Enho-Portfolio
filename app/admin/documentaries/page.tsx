@@ -45,6 +45,7 @@ export default function DocumentariesPage() {
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<Documentary | null>(null)
   const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
   useEffect(() => {
@@ -66,26 +67,43 @@ export default function DocumentariesPage() {
   }
 
   async function handleSave(documentary: Documentary) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
+      setSaving(true)
       const method = documentary._id ? 'PUT' : 'POST'
       const response = await fetch('/api/documentaries', {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(documentary)
+        body: JSON.stringify(documentary),
+        signal: controller.signal
       })
       
+      clearTimeout(timeoutId)
+
       if (response.ok) {
         setMessage({ type: 'success', text: `Documentary ${documentary._id ? 'updated' : 'created'} successfully!` })
         setShowForm(false)
         setEditing(null)
         fetchDocumentaries()
       } else {
-        setMessage({ type: 'error', text: 'Failed to save documentary' })
+        const errorData = await response.json().catch(() => ({}))
+        setMessage({ type: 'error', text: errorData.error || 'Failed to save documentary' })
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to save documentary' })
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      console.error('Failed to save documentary:', error)
+      const isTimeout = error.name === 'AbortError'
+      setMessage({ 
+        type: 'error', 
+        text: isTimeout 
+          ? 'Request timed out after 10s. The database might be unreachable.' 
+          : 'Failed to save documentary' 
+      })
     } finally {
-      setTimeout(() => setMessage(null), 3000)
+      setSaving(false)
+      setTimeout(() => setMessage(null), 5000)
     }
   }
 

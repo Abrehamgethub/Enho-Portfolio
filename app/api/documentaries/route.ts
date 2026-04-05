@@ -67,20 +67,20 @@ export async function POST(request: NextRequest) {
   try {
     const conn = await safeConnectDB()
     if (!conn) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+      return NextResponse.json({ error: 'Database connection timeout. Please check MongoDB Atlas IP whitelisting.' }, { status: 503 })
     }
 
     const body = await request.json()
-    
     const documentary = new Documentary(body)
-    await withTimeout(documentary.save(), 5000, null)
+    await withTimeout(documentary.save(), 5000)
     
     return NextResponse.json(documentary, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to create documentary:', error)
+    const isTimeout = error.message?.includes('timed out')
     return NextResponse.json(
-      { error: 'Failed to create documentary' },
-      { status: 500 }
+      { error: isTimeout ? 'Database write timed out' : 'Failed to create documentary' },
+      { status: isTimeout ? 504 : 500 }
     )
   }
 }
@@ -93,7 +93,7 @@ export async function PUT(request: NextRequest) {
   try {
     const conn = await safeConnectDB()
     if (!conn) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+      return NextResponse.json({ error: 'Database connection timeout' }, { status: 503 })
     }
 
     const body = await request.json()
@@ -101,35 +101,25 @@ export async function PUT(request: NextRequest) {
     const docId = id || _id
     
     if (!docId) {
-      return NextResponse.json(
-        { error: 'Documentary ID is required' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Documentary ID is required' }, { status: 400 })
     }
     
     const documentary = await withTimeout(
-      Documentary.findByIdAndUpdate(
-        docId,
-        updateData,
-        { new: true, runValidators: true }
-      ),
-      5000,
-      null
+      Documentary.findByIdAndUpdate(docId, updateData, { new: true, runValidators: true }),
+      5000
     )
     
     if (!documentary) {
-      return NextResponse.json(
-        { error: 'Documentary not found or update timed out' },
-        { status: 404 }
-      )
+      return NextResponse.json({ error: 'Documentary not found' }, { status: 404 })
     }
     
     return NextResponse.json(documentary)
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to update documentary:', error)
+    const isTimeout = error.message?.includes('timed out')
     return NextResponse.json(
-      { error: 'Failed to update documentary' },
-      { status: 500 }
+      { error: isTimeout ? 'Database update timed out' : 'Failed to update documentary' },
+      { status: isTimeout ? 504 : 500 }
     )
   }
 }

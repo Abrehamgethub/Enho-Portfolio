@@ -23,49 +23,55 @@ if (!global.mongoose) {
 
 async function connectDB(): Promise<typeof mongoose | null> {
   if (!MONGODB_URI) {
+    console.error('❌ MONGODB_URI is not set')
     return null
   }
 
   if (cached.conn) {
+    console.log('🔄 Using cached MongoDB connection')
     return cached.conn
   }
 
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 3000,
-      connectTimeoutMS: 3000,
+      serverSelectionTimeoutMS: 2000, // Reduced from 3000 to catch timeouts faster
+      connectTimeoutMS: 2000, // Reduced
       socketTimeoutMS: 5000,
+      family: 4, // Force IPv4 to avoid Atlas connectivity issues
     }
 
+    console.log('🔌 Connecting to MongoDB...')
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
-      console.log('✅ Connected to MongoDB')
+      console.log('✅ MongoDB connected successfully')
       return mongoose
+    }).catch((err) => {
+      console.error('❌ MongoDB connection failed:', err)
+      cached.promise = null
+      throw err
     })
   }
 
   try {
     cached.conn = await cached.promise
+    return cached.conn
   } catch (e) {
     cached.promise = null
-    console.error('❌ MongoDB connection error:', e)
     throw e
   }
-
-  return cached.conn
 }
 
 // Helper: wrap any async DB operation with a timeout to prevent serverless hanging
 export async function withTimeout<T>(
   promise: Promise<T>,
-  timeoutMs: number = 5000,
+  timeoutMs: number = 4500, // Reduced slightly to stay within serverless 5s-10s windows
   fallback: T | null = null
 ): Promise<T> {
   let timer: NodeJS.Timeout | undefined;
   
   const timeoutPromise = new Promise<T>((_, reject) => {
     timer = setTimeout(() => {
-      reject(new Error(`DB operation timed out after ${timeoutMs}ms`))
+      reject(new Error(`Database operation timed out after ${timeoutMs}ms`))
     }, timeoutMs)
   })
 
@@ -83,7 +89,7 @@ export async function withTimeout<T>(
     }
     
     // Otherwise, rethrow to let the caller handle the failure (especially for writes)
-    console.error('❌ DB operation failed:', error)
+    console.error('❌ DB operation failure:', error)
     throw error
   }
 }
@@ -91,9 +97,10 @@ export async function withTimeout<T>(
 // Safe connectDB that returns null on failure instead of throwing
 export async function safeConnectDB(): Promise<typeof mongoose | null> {
   try {
-    return await withTimeout(connectDB(), 5000, null)
+    // We give connection 4s, leaving 1s for the function to respond before standard 5s Vercel limit
+    return await withTimeout(connectDB(), 4000, null)
   } catch (err) {
-    console.error('Failed to safely connect to DB:', err)
+    console.error('Failed to safely connect to DB within timeout:', err)
     return null
   }
 }

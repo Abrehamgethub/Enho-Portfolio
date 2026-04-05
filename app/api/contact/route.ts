@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { addMessage } from '@/lib/db'
+import { safeConnectDB } from '@/lib/mongodb'
 import nodemailer from 'nodemailer'
 
 // Email notification function
@@ -62,15 +63,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Save to database
-    const savedMessage = await addMessage({
-      name,
-      email,
-      subject: subject || 'No Subject',
-      message
-    })
-    
-    console.log('New contact submission saved:', savedMessage.id)
+    // Save to database with timeout
+    try {
+      const conn = await safeConnectDB()
+      if (!conn) {
+        throw new Error('Database connection timeout')
+      }
+      
+      const savedMessage = await addMessage({
+        name,
+        email,
+        subject: subject || 'No Subject',
+        message
+      })
+      console.log('New contact submission saved:', savedMessage.id)
+    } catch (dbError: any) {
+      console.error('Contact DB error:', dbError)
+      const isTimeout = dbError.message?.includes('timed out') || dbError.message?.includes('connection timeout')
+      return NextResponse.json(
+        { error: isTimeout ? 'Database connection timed out. Please try again later.' : 'Failed to save message.' },
+        { status: isTimeout ? 504 : 500 }
+      )
+    }
+
+    // Send email notification (don't fail the request if email fails)
+    try {
+      await sendEmailNotification({ name, email, subject: subject || 'No Subject', message })
+    } catch (emailError) {
+      console.error('Email notification failed but message was saved:', emailError)
+    }
 
     // Example: Send to Telegram (if BOT_TOKEN and CHAT_ID are set)
     const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN
@@ -97,9 +118,6 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Send email notification
-    await sendEmailNotification({ name, email, subject: subject || 'No Subject', message })
-
     return NextResponse.json({ 
       success: true, 
       message: 'Thank you for your message! We will get back to you soon.' 
@@ -108,7 +126,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Contact form error:', error)
     return NextResponse.json(
-      { error: 'Failed to send message. Please try again.' },
+      { error: 'Failed to process request. Please try again.' },
       { status: 500 }
     )
   }

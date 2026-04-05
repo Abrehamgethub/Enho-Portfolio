@@ -64,26 +64,43 @@ export default function TrainingsPage() {
   }
 
   async function handleSave(training: Training) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
+      setSaving(true)
       const method = training._id ? 'PUT' : 'POST'
       const response = await fetch('/api/trainings', {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(training)
+        body: JSON.stringify(training),
+        signal: controller.signal
       })
       
+      clearTimeout(timeoutId)
+
       if (response.ok) {
         setMessage({ type: 'success', text: `Training ${training._id ? 'updated' : 'created'} successfully!` })
         setShowForm(false)
         setEditing(null)
         fetchTrainings()
       } else {
-        setMessage({ type: 'error', text: 'Failed to save training' })
+        const errorData = await response.json().catch(() => ({}))
+        setMessage({ type: 'error', text: errorData.error || 'Failed to save training' })
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Failed to save training' })
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      console.error('Failed to save training:', error)
+      const isTimeout = error.name === 'AbortError'
+      setMessage({ 
+        type: 'error', 
+        text: isTimeout 
+          ? 'Request timed out after 10s. The database might be unreachable.' 
+          : 'Failed to save training' 
+      })
     } finally {
-      setTimeout(() => setMessage(null), 3000)
+      setSaving(false)
+      setTimeout(() => setMessage(null), 5000)
     }
   }
 
