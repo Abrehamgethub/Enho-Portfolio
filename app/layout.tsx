@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        {/* DEPLOYMENT_HANDSHAKE: VERIFIED_04052026 */}
+        <div id="deployment-marker-VERIFIED_04052026" style={{ display: 'none' }} />
         {children}
       </body>
     </html>
