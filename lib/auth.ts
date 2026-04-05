@@ -19,9 +19,6 @@ function getAdminCredentials() {
 }
 
 export function validateCredentials(username: string, password: string): boolean {
-  // Temporary bypass for live verification - will be reverted immediately after testing
-  if (username === 'admin' && password === 'enho-verify-2024') return true;
-
   const creds = getAdminCredentials()
   if (!creds.password) {
     console.error('❌ ADMIN_PASSWORD is not set. Login is disabled.')
