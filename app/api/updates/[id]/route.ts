@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
-import Update from '@/lib/models/Update'
+import { deleteUpdate, updateUpdate } from '@/lib/db'
 import { requireAuth } from '@/lib/auth-middleware'
 
 // DELETE an update (admin only)
@@ -12,8 +11,13 @@ export async function DELETE(
   if (authError) return authError
 
   try {
-    await connectDB()
-    await Update.findByIdAndDelete((await params).id)
+    const { id } = await params
+    const success = await deleteUpdate(id)
+    
+    if (!success) {
+      return NextResponse.json({ error: 'Update not found' }, { status: 404 })
+    }
+    
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting update:', error)
@@ -30,14 +34,14 @@ export async function PATCH(
   if (authError) return authError
 
   try {
-    await connectDB()
+    const { id } = await params
     const body = await request.json()
     
-    const update = await Update.findByIdAndUpdate(
-      (await params).id,
-      { active: body.active },
-      { new: true }
-    )
+    const update = await updateUpdate(id, { active: body.active })
+    
+    if (!update) {
+      return NextResponse.json({ error: 'Update not found' }, { status: 404 })
+    }
     
     return NextResponse.json({ success: true, update })
   } catch (error) {

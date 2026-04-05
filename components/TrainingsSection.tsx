@@ -35,10 +35,13 @@ export default function TrainingsSection() {
   useEffect(() => {
     async function fetchTrainings() {
       try {
-        const response = await fetch('/api/trainings')
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 8000)
+        const response = await fetch('/api/trainings', { signal: controller.signal })
+        clearTimeout(timeoutId)
         if (response.ok) {
           const data = await response.json()
-          setTrainings(data.trainings?.slice(0, 6) || []) // Show max 6 trainings
+          setTrainings(data.trainings?.slice(0, 6) || [])
         }
       } catch (error) {
         console.error('Failed to fetch trainings:', error)

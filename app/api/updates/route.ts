@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
-import Update from '@/lib/models/Update'
+import { getUpdates, addUpdate } from '@/lib/db'
 import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
@@ -8,32 +7,23 @@ export const dynamic = 'force-dynamic'
 // GET all updates
 export async function GET() {
   try {
-    // Try to connect to MongoDB first
-    await connectDB()
-    const updates = await Update.find({ active: true }).sort({ createdAt: -1 }).limit(10)
+    const updates = await getUpdates()
     
     // Format for frontend
-    const formattedUpdates = updates.map(update => ({
-      id: update._id.toString(),
+    const formattedUpdates = updates.slice(0, 10).map(update => ({
+      id: update.id,
       text: `${update.emoji} ${update.text}`,
-      time: getTimeAgo(update.createdAt),
+      time: getTimeAgo(new Date(update.createdAt)),
       createdAt: update.createdAt
     }))
     
-
+    console.log(`Returning ${formattedUpdates.length} updates`)
     return NextResponse.json({ updates: formattedUpdates })
   } catch (error) {
-    console.error('Database connection failed, using fallback data:', error)
+    console.error('Error fetching updates:', error)
     
-    // Return sample data if DB fails
-    return NextResponse.json({ 
-      updates: [
-        { id: '1', text: '🎙️ New Episode: Understanding Diabetes Prevention', time: '2 hours ago' },
-        { id: '2', text: '💊 Health Tip: 5 ways to boost your immune system', time: '5 hours ago' },
-        { id: '3', text: '📢 Join us LIVE this Saturday for Q&A session!', time: '1 day ago' },
-        { id: '4', text: '🏥 Community Health Workshop - Register Now!', time: '2 days ago' },
-      ]
-    })
+    // Return empty array instead of sample data when there's an error
+    return NextResponse.json({ updates: [] })
   }
 }
 
@@ -43,25 +33,21 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    try {
-      await connectDB()
-    } catch (dbError) {
-      console.error('Database connection failed during update posting:', dbError)
-      return NextResponse.json({ error: 'Database unavailable. Please try again later.' }, { status: 503 })
-    }
-    
     const body = await request.json()
+    console.log('Creating new update:', body)
     
-    const update = await Update.create({
+    const update = await addUpdate({
       text: body.text,
       emoji: body.emoji || '📢',
       active: true
     })
     
+    console.log('Update created successfully:', update.id)
+    
     return NextResponse.json({ 
       success: true, 
       update: {
-        id: update._id.toString(),
+        id: update.id,
         text: update.text,
         emoji: update.emoji,
         createdAt: update.createdAt

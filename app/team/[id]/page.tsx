@@ -5,7 +5,8 @@ import { connectToDatabase } from '@/lib/db'
 import TeamMember from '@/lib/models/TeamMember'
 import DoctorProfile from './DoctorProfile'
 
-export const dynamic = 'force-dynamic'
+// Removed force-dynamic to allow generateStaticParams to statically build these pages
+// which prevents 404s if MongoDB is down
 
 // Required for static export with dynamic routes
 export async function generateStaticParams() {

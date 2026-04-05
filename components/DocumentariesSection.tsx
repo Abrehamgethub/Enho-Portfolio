@@ -35,10 +35,13 @@ export default function DocumentariesSection() {
   useEffect(() => {
     async function fetchDocumentaries() {
       try {
-        const response = await fetch('/api/documentaries')
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 8000)
+        const response = await fetch('/api/documentaries', { signal: controller.signal })
+        clearTimeout(timeoutId)
         if (response.ok) {
           const data = await response.json()
-          setDocumentaries(data.documentaries?.slice(0, 6) || []) // Show max 6 documentaries
+          setDocumentaries(data.documentaries?.slice(0, 6) || [])
         }
       } catch (error) {
         console.error('Failed to fetch documentaries:', error)

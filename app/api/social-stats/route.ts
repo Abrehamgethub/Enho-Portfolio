@@ -1,13 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import SocialStats from '@/lib/models/SocialStats'
-import { connectToDatabase } from '@/lib/db'
+import { safeConnectDB, withTimeout } from '@/lib/mongodb'
 import { requireAuth } from '@/lib/auth-middleware'
+
+// Default social stats when DB is unavailable
+const defaultSocialStats = [
+  { platform: 'YouTube', handle: '@Eneho_Hakim', followers: '21K+ Subscribers', url: 'https://www.youtube.com/@Eneho_Hakim', color: '#FF0000', icon: 'youtube', order: 0 },
+  { platform: 'TikTok', handle: '@eneho_egna', followers: '25K+ Followers', url: 'https://www.tiktok.com/@eneho_egna', color: '#000000', icon: 'tiktok', order: 1 },
+  { platform: 'Telegram', handle: '@Eneho_Tena', followers: '8K+ Members', url: 'https://t.me/Eneho_Tena', color: '#0088CC', icon: 'telegram', order: 2 },
+  { platform: 'Facebook', handle: 'Eneho Egna', followers: '3K+ Followers', url: 'https://www.facebook.com/enehoegna', color: '#1877F2', icon: 'facebook', order: 3 },
+]
 
 // GET all social stats
 export async function GET() {
   try {
-    await connectToDatabase()
-    const stats = await SocialStats.find().sort({ order: 1 })
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json(defaultSocialStats)
+    }
+
+    const stats = await withTimeout(
+      SocialStats.find().sort({ order: 1 }).exec(),
+      4000,
+      null
+    )
+
+    if (!stats || stats.length === 0) {
+      return NextResponse.json(defaultSocialStats)
+    }
     
     // Automate YouTube subscriber count if API key is present
     const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY
@@ -16,14 +36,14 @@ export async function GET() {
     if (YOUTUBE_API_KEY) {
       try {
         const response = await fetch(
-          `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${CHANNEL_ID}&key=${YOUTUBE_API_KEY}`
+          `https://www.googleapis.com/youtube/v3/channels?part=statistics&id=${CHANNEL_ID}&key=${YOUTUBE_API_KEY}`,
+          { signal: AbortSignal.timeout(3000) }
         )
         if (response.ok) {
           const data = await response.json()
           const subCount = data.items?.[0]?.statistics?.subscriberCount
           if (subCount) {
-            // Update the YouTube stat in the list
-            const youtubeIndex = stats.findIndex(s => s.platform.toLowerCase() === 'youtube')
+            const youtubeIndex = stats.findIndex((s: any) => s.platform.toLowerCase() === 'youtube')
             if (youtubeIndex !== -1) {
               const count = parseInt(subCount)
               let displayCount = subCount
@@ -42,10 +62,7 @@ export async function GET() {
     return NextResponse.json(stats)
   } catch (error) {
     console.error('Failed to fetch social stats:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch social stats' },
-      { status: 500 }
-    )
+    return NextResponse.json(defaultSocialStats)
   }
 }
 
@@ -55,7 +72,11 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const body = await request.json()
     
     const { platform, handle, followers, url, color, icon, order } = body
@@ -67,7 +88,6 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Update existing or create new
     const stat = await SocialStats.findOneAndUpdate(
       { platform },
       { platform, handle, followers, url, color, icon, order: order || 0 },
@@ -90,7 +110,11 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const body = await request.json()
     const { stats } = body
     

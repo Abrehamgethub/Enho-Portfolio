@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Training from '@/lib/models/Training'
-import { connectToDatabase } from '@/lib/db'
+import { safeConnectDB, withTimeout } from '@/lib/mongodb'
 import { requireAuth } from '@/lib/auth-middleware'
+import { initialTrainings } from '@/lib/trainings-data'
 
 export const dynamic = 'force-dynamic'
 
 // GET all trainings
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      console.warn('Trainings API: MongoDB unavailable, returning static fallback')
+      return NextResponse.json({ trainings: initialTrainings, source: 'static' })
+    }
+
     const { searchParams } = new URL(request.url)
     const featured = searchParams.get('featured')
     const category = searchParams.get('category')
@@ -21,14 +27,20 @@ export async function GET(request: NextRequest) {
       query.category = category
     }
     
-    const trainings = await Training.find(query).sort({ date: -1 })
-    return NextResponse.json({ trainings })
+    const trainings = await withTimeout(
+      Training.find(query).sort({ date: -1 }).exec(),
+      4000,
+      null
+    )
+
+    if (!trainings) {
+      return NextResponse.json({ trainings: initialTrainings, source: 'static' })
+    }
+
+    return NextResponse.json({ trainings: trainings.length > 0 ? trainings : initialTrainings })
   } catch (error) {
     console.error('Failed to fetch trainings:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch trainings', trainings: [] },
-      { status: 500 }
-    )
+    return NextResponse.json({ trainings: initialTrainings, source: 'static-fallback' })
   }
 }
 
@@ -38,7 +50,11 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const body = await request.json()
     
     const training = new Training(body)
@@ -60,7 +76,11 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const body = await request.json()
     const { id, _id, ...updateData } = body
     const trainingId = id || _id
@@ -101,7 +121,11 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const { searchParams } = new URL(request.url)
     const trainingId = searchParams.get('id') || searchParams.get('_id')
     

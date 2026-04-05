@@ -61,7 +61,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
     async function checkAuth() {
       try {
-        const response = await fetch('/api/auth/check')
+        // Add timeout to prevent hanging forever if API is slow/unresponsive
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), 6000)
+
+        const response = await fetch('/api/auth/check', { signal: controller.signal })
+        clearTimeout(timeoutId)
         if (!isMounted) return
 
         if (response.ok) {
@@ -69,13 +74,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           setLoading(false)
         } else {
           setAuthenticated(false)
-          // Store loading=true until redirect happens to avoid flickering dashboard content
           router.push('/admin/login')
-          // Note: setLoading(false) will happen when the route changes and effect re-runs for isLoginPage
         }
       } catch (error) {
         if (isMounted) {
+          console.warn('Auth check failed or timed out, redirecting to login')
           setAuthenticated(false)
+          setLoading(false)
           router.push('/admin/login')
         }
       } 

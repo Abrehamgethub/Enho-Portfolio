@@ -33,7 +33,9 @@ async function connectDB(): Promise<typeof mongoose | null> {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 3000,
+      connectTimeoutMS: 3000,
+      socketTimeoutMS: 5000,
     }
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
@@ -51,6 +53,40 @@ async function connectDB(): Promise<typeof mongoose | null> {
   }
 
   return cached.conn
+}
+
+// Helper: wrap any async DB operation with a timeout to prevent serverless hanging
+export async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number = 4000,
+  fallback: T
+): Promise<T> {
+  let timer: NodeJS.Timeout
+  const timeout = new Promise<T>((resolve) => {
+    timer = setTimeout(() => {
+      console.warn(`⚠️ DB operation timed out after ${timeoutMs}ms, using fallback`)
+      resolve(fallback)
+    }, timeoutMs)
+  })
+
+  try {
+    const result = await Promise.race([promise, timeout])
+    clearTimeout(timer!)
+    return result
+  } catch (error) {
+    clearTimeout(timer!)
+    console.error('DB operation failed, using fallback:', error)
+    return fallback
+  }
+}
+
+// Safe connectDB that never throws — returns null on failure
+export async function safeConnectDB(): Promise<typeof mongoose | null> {
+  try {
+    return await withTimeout(connectDB(), 4000, null)
+  } catch {
+    return null
+  }
 }
 
 export default connectDB

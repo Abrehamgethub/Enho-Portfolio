@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
+import { safeConnectDB, withTimeout } from '@/lib/mongodb'
 import Sponsor from '@/lib/models/Sponsor'
 import { requireAuth } from '@/lib/auth-middleware'
 import { initialSponsors } from '@/lib/sponsors-data'
@@ -9,15 +9,16 @@ export const dynamic = 'force-dynamic'
 // GET all sponsors
 export async function GET(request: NextRequest) {
   try {
-    try {
-      await connectDB()
-    } catch (dbError) {
-      console.error('Database connection failed in Sponsors API, using static fallback:', dbError)
+    const conn = await safeConnectDB()
+    if (!conn) {
+      console.warn('Sponsors API: MongoDB unavailable, returning static fallback')
       return NextResponse.json({ sponsors: initialSponsors, source: 'static' })
     }
-    
-    // Check if empty, return static data as safety
-    const count = await Sponsor.countDocuments()
+
+    const count = await withTimeout(Sponsor.countDocuments().exec(), 3000, -1)
+    if (count === -1) {
+      return NextResponse.json({ sponsors: initialSponsors, source: 'static' })
+    }
     if (count === 0) {
       return NextResponse.json({ sponsors: initialSponsors, source: 'static' })
     }
@@ -30,12 +31,20 @@ export async function GET(request: NextRequest) {
     if (programType) query.programType = programType
     if (featured === 'true') query.featured = true
     
-    const sponsors = await Sponsor.find(query).sort({ order: 1, createdAt: -1 })
+    const sponsors = await withTimeout(
+      Sponsor.find(query).sort({ order: 1, createdAt: -1 }).exec(),
+      4000,
+      null
+    )
     
-    return NextResponse.json({ sponsors: sponsors.length > 0 ? sponsors : initialSponsors })
+    if (!sponsors || sponsors.length === 0) {
+      return NextResponse.json({ sponsors: initialSponsors, source: 'static' })
+    }
+    
+    return NextResponse.json({ sponsors })
   } catch (error) {
     console.error('API Error (GET /api/sponsors):', error)
-    return NextResponse.json({ sponsors: initialSponsors, error: 'Failed to fetch sponsors, using fallback' })
+    return NextResponse.json({ sponsors: initialSponsors, source: 'static-fallback' })
   }
 }
 
@@ -45,7 +54,11 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const body = await request.json()
     
     const sponsor = await Sponsor.create({

@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Documentary from '@/lib/models/Documentary'
-import { connectToDatabase } from '@/lib/db'
+import { safeConnectDB, withTimeout } from '@/lib/mongodb'
 import { requireAuth } from '@/lib/auth-middleware'
+import { initialDocumentaries } from '@/lib/documentaries-data'
 
 export const dynamic = 'force-dynamic'
 
 // GET all documentaries
 export async function GET(request: NextRequest) {
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      console.warn('Documentaries API: MongoDB unavailable, returning static fallback')
+      return NextResponse.json({ documentaries: initialDocumentaries, source: 'static' })
+    }
+
     const { searchParams } = new URL(request.url)
     const featured = searchParams.get('featured')
     const language = searchParams.get('language')
@@ -21,14 +27,20 @@ export async function GET(request: NextRequest) {
       query.language = language
     }
     
-    const documentaries = await Documentary.find(query).sort({ releaseDate: -1 })
-    return NextResponse.json({ documentaries })
+    const documentaries = await withTimeout(
+      Documentary.find(query).sort({ releaseDate: -1 }).exec(),
+      4000,
+      null
+    )
+
+    if (!documentaries) {
+      return NextResponse.json({ documentaries: initialDocumentaries, source: 'static' })
+    }
+
+    return NextResponse.json({ documentaries: documentaries.length > 0 ? documentaries : initialDocumentaries })
   } catch (error) {
     console.error('Failed to fetch documentaries:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch documentaries', documentaries: [] },
-      { status: 500 }
-    )
+    return NextResponse.json({ documentaries: initialDocumentaries, source: 'static-fallback' })
   }
 }
 
@@ -38,7 +50,11 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const body = await request.json()
     
     const documentary = new Documentary(body)
@@ -60,7 +76,11 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const body = await request.json()
     const { id, _id, ...updateData } = body
     const docId = id || _id
@@ -101,7 +121,11 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectToDatabase()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const { searchParams } = new URL(request.url)
     const docId = searchParams.get('id') || searchParams.get('_id')
     

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
+import { safeConnectDB, withTimeout } from '@/lib/mongodb'
 import Guest from '@/lib/models/Guest'
 import { requireAuth } from '@/lib/auth-middleware'
 import { initialGuests } from '@/lib/guests-data'
@@ -9,16 +9,17 @@ export const dynamic = 'force-dynamic'
 // GET all guests
 export async function GET(request: NextRequest) {
   try {
-    try {
-      await connectDB()
-    } catch (dbError) {
-      console.error('Database connection failed in Guests API, using static fallback:', dbError)
+    const conn = await safeConnectDB()
+    if (!conn) {
+      console.warn('Guests API: MongoDB unavailable, returning static fallback')
       return NextResponse.json({ guests: initialGuests, source: 'static' })
     }
-    
-    // Check if empty, but don't seed here if we already have static data as fallback
-    // Just return static data if DB is empty to stay safe
-    const count = await Guest.countDocuments()
+
+    const count = await withTimeout(Guest.countDocuments().exec(), 3000, -1)
+    if (count === -1) {
+      // Timeout — return fallback
+      return NextResponse.json({ guests: initialGuests, source: 'static' })
+    }
     if (count === 0) {
       return NextResponse.json({ guests: initialGuests, source: 'static' })
     }
@@ -29,12 +30,20 @@ export async function GET(request: NextRequest) {
     const query: any = {}
     if (featured === 'true') query.featured = true
     
-    const guests = await Guest.find(query).sort({ order: 1, createdAt: -1 })
+    const guests = await withTimeout(
+      Guest.find(query).sort({ order: 1, createdAt: -1 }).exec(),
+      4000,
+      null
+    )
     
-    return NextResponse.json({ guests: guests.length > 0 ? guests : initialGuests })
+    if (!guests || guests.length === 0) {
+      return NextResponse.json({ guests: initialGuests, source: 'static' })
+    }
+    
+    return NextResponse.json({ guests })
   } catch (error) {
     console.error('API Error (GET /api/guests):', error)
-    return NextResponse.json({ guests: initialGuests, error: 'Failed to fetch guests, using fallback' })
+    return NextResponse.json({ guests: initialGuests, source: 'static-fallback' })
   }
 }
 
@@ -44,7 +53,11 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
+    const conn = await safeConnectDB()
+    if (!conn) {
+      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+    }
+
     const body = await request.json()
 
     if (!body.episodeUrl || !String(body.episodeUrl).trim()) {
