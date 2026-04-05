@@ -14,7 +14,10 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {/* DEPLOYMENT_HANDSHAKE: VERIFIED_04052026 */}
+        {children}
+      </body>
     </html>
   )
 }
