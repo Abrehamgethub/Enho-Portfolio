@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getUpdates, addUpdate } from '@/lib/db'
 import { requireAuth } from '@/lib/auth-middleware'
-import { safeConnectDB } from '@/lib/mongodb'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,10 +30,13 @@ export async function GET() {
       createdAt: update.createdAt
     }))
     
-    return NextResponse.json({ updates: formattedUpdates })
-  } catch (error) {
-    console.error('Error fetching updates:', error)
-    return NextResponse.json({ updates: [] })
+    return NextResponse.json({ updates: formattedUpdates, source: 'db' })
+  } catch (error: any) {
+    console.error('❌ Updates GET failed:', error.message)
+    return NextResponse.json(
+      { error: 'Database connection failed: ' + error.message, updates: [] },
+      { status: 503 }
+    )
   }
 }
 
@@ -44,21 +46,15 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
   
   try {
-    const conn = await safeConnectDB()
-    if (!conn) {
-      return NextResponse.json({ error: 'Database connection timeout' }, { status: 503 })
-    }
-
     const { text, emoji } = await request.json()
     const update = await addUpdate({ text, emoji: emoji || '📢', active: true })
     
     return NextResponse.json({ success: true, update }, { status: 201 })
   } catch (error: any) {
-    console.error('Error creating update:', error)
-    const isTimeout = error.message?.includes('timed out')
+    console.error('❌ Update POST failed:', error.message)
     return NextResponse.json(
-      { error: isTimeout ? 'Database write timed out' : 'Failed to create update' },
-      { status: isTimeout ? 504 : 500 }
+      { error: 'Failed to create update: ' + error.message },
+      { status: 503 }
     )
   }
 }

@@ -13,11 +13,18 @@ export async function GET() {
         'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
     })
-  } catch (error) {
-    console.error('Admin stats API error:', error)
+  } catch (error: any) {
+    console.error('❌ Admin stats failed:', error.message)
     return NextResponse.json(
-      { totalMessages: 0, unreadMessages: 0, totalTeam: 3, recentMessages: [] },
+      { 
+        error: 'Database connection failed: ' + error.message,
+        totalMessages: 0, 
+        unreadMessages: 0, 
+        totalTeam: 3, 
+        recentMessages: [] 
+      },
       {
+        status: 503,
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate',
         },

@@ -68,7 +68,6 @@ export default function TrainingsPage() {
     const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     try {
-      setSaving(true)
       const method = training._id ? 'PUT' : 'POST'
       const response = await fetch('/api/trainings', {
         method,
@@ -99,7 +98,6 @@ export default function TrainingsPage() {
           : 'Failed to save training' 
       })
     } finally {
-      setSaving(false)
       setTimeout(() => setMessage(null), 5000)
     }
   }

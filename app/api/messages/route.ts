@@ -11,12 +11,20 @@ export async function GET(request: NextRequest) {
   const authError = requireAuth(request)
   if (authError) return authError
 
-  const messages = await getMessages()
-  return NextResponse.json({ messages }, {
-    headers: {
-      'Cache-Control': 'no-store, no-cache, must-revalidate',
-    },
-  })
+  try {
+    const messages = await getMessages()
+    return NextResponse.json({ messages, source: 'db' }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    })
+  } catch (error: any) {
+    console.error('❌ Messages GET failed:', error.message)
+    return NextResponse.json(
+      { error: 'Database connection failed: ' + error.message, messages: [] },
+      { status: 503, headers: { 'Cache-Control': 'no-store, no-cache, must-revalidate' } }
+    )
+  }
 }
 
 // POST new message (from contact form)
@@ -40,10 +48,11 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({ success: true, message: newMessage })
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ Message POST failed:', error.message)
     return NextResponse.json(
-      { error: 'Failed to save message' },
-      { status: 500 }
+      { error: 'Failed to save message: ' + error.message },
+      { status: 503 }
     )
   }
 }

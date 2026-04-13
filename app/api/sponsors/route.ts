@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { safeConnectDB, withTimeout } from '@/lib/mongodb'
+import connectDB, { withTimeout } from '@/lib/mongodb'
 import Sponsor from '@/lib/models/Sponsor'
 import { requireAuth } from '@/lib/auth-middleware'
 import { initialSponsors } from '@/lib/sponsors-data'
@@ -9,28 +9,18 @@ export const dynamic = 'force-dynamic'
 // GET all sponsors
 export async function GET(request: NextRequest) {
   try {
-    const conn = await safeConnectDB()
-    if (!conn) {
-      console.warn('Sponsors API: MongoDB unavailable, returning static fallback')
-      return NextResponse.json({ sponsors: initialSponsors, source: 'static' })
-    }
+    await connectDB()
 
-    const count = await withTimeout(Sponsor.countDocuments().exec(), 3000, -1)
-    if (count === -1) {
-      return NextResponse.json({ sponsors: initialSponsors, source: 'static' })
-    }
-    if (count === 0) {
-      try {
-        const toInsert = initialSponsors.map(s => {
-          const { id, _id, ...rest } = s as any;
-          return rest;
-        });
-        const inserted = await Sponsor.insertMany(toInsert);
-        return NextResponse.json({ sponsors: inserted, source: 'db-seeded' });
-      } catch (e) {
-        console.error('Sponsors seed error:', e);
-        return NextResponse.json({ sponsors: initialSponsors, source: 'static' });
-      }
+    const totalCount = await withTimeout(Sponsor.countDocuments({}), 5000)
+    
+    // Seed DB if empty
+    if (totalCount === 0) {
+      console.log('📦 Sponsors collection empty — seeding with initial data')
+      const toInsert = initialSponsors.map(s => {
+        const { id, _id, ...rest } = s as any;
+        return rest;
+      });
+      await withTimeout(Sponsor.insertMany(toInsert), 8000);
     }
 
     const { searchParams } = new URL(request.url)
@@ -43,18 +33,16 @@ export async function GET(request: NextRequest) {
     
     const sponsors = await withTimeout(
       Sponsor.find(query).sort({ order: 1, createdAt: -1 }).exec(),
-      4000,
-      null
+      8000
     )
     
-    if (!sponsors || sponsors.length === 0) {
-      return NextResponse.json({ sponsors: initialSponsors, source: 'static' })
-    }
-    
-    return NextResponse.json({ sponsors })
-  } catch (error) {
-    console.error('API Error (GET /api/sponsors):', error)
-    return NextResponse.json({ sponsors: initialSponsors, source: 'static-fallback' })
+    return NextResponse.json({ sponsors, source: 'db' })
+  } catch (error: any) {
+    console.error('❌ Sponsors GET failed:', error.message)
+    return NextResponse.json(
+      { error: 'Database connection failed: ' + error.message, sponsors: [] },
+      { status: 503 }
+    )
   }
 }
 
@@ -64,10 +52,7 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const conn = await safeConnectDB()
-    if (!conn) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
-    }
+    await connectDB()
 
     const body = await request.json()
     
@@ -87,8 +72,8 @@ export async function POST(request: NextRequest) {
     })
     
     return NextResponse.json({ success: true, sponsor })
-  } catch (error) {
-    console.error('Error adding sponsor:', error)
-    return NextResponse.json({ error: 'Failed to add sponsor' }, { status: 500 })
+  } catch (error: any) {
+    console.error('❌ Sponsor POST failed:', error.message)
+    return NextResponse.json({ error: 'Failed to add sponsor: ' + error.message }, { status: 503 })
   }
 }

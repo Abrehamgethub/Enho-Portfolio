@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
+import connectDB, { withTimeout } from '@/lib/mongodb'
 import FeaturedVideo from '@/lib/models/FeaturedVideo'
 import { requireAuth } from '@/lib/auth-middleware'
 
@@ -18,7 +18,10 @@ export async function GET(request: NextRequest) {
     if (category) query.category = category
     if (activeOnly) query.active = true
     
-    const videos = await FeaturedVideo.find(query).sort({ order: 1, createdAt: -1 })
+    const videos = await withTimeout(
+      FeaturedVideo.find(query).sort({ order: 1, createdAt: -1 }).exec(),
+      8000
+    )
     
     return NextResponse.json({ 
       videos: videos.map(v => ({
@@ -29,11 +32,15 @@ export async function GET(request: NextRequest) {
         order: v.order,
         active: v.active,
         _id: v._id
-      }))
+      })),
+      source: 'db'
     })
-  } catch (error) {
-    console.error('Error fetching featured videos:', error)
-    return NextResponse.json({ videos: [] })
+  } catch (error: any) {
+    console.error('❌ Featured videos GET failed:', error.message)
+    return NextResponse.json(
+      { error: 'Database connection failed: ' + error.message, videos: [] },
+      { status: 503 }
+    )
   }
 }
 
@@ -62,8 +69,8 @@ export async function POST(request: NextRequest) {
     })
     
     return NextResponse.json({ success: true, video })
-  } catch (error) {
-    console.error('Error adding featured video:', error)
-    return NextResponse.json({ error: 'Failed to add video' }, { status: 500 })
+  } catch (error: any) {
+    console.error('❌ Featured video POST failed:', error.message)
+    return NextResponse.json({ error: 'Failed to add video: ' + error.message }, { status: 503 })
   }
 }

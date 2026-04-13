@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { addMessage } from '@/lib/db'
-import { safeConnectDB } from '@/lib/mongodb'
+import connectDB from '@/lib/mongodb'
 import nodemailer from 'nodemailer'
 
 // Email notification function
@@ -63,28 +63,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Save to database with timeout
+    // Connect to DB — must succeed for message to be saved
     try {
-      const conn = await safeConnectDB()
-      if (!conn) {
-        throw new Error('Database connection timeout')
-      }
-      
-      const savedMessage = await addMessage({
-        name,
-        email,
-        subject: subject || 'No Subject',
-        message
-      })
-      console.log('New contact submission saved:', savedMessage.id)
-    } catch (dbError: any) {
-      console.error('Contact DB error:', dbError)
-      const isTimeout = dbError.message?.includes('timed out') || dbError.message?.includes('connection timeout')
+      await connectDB()
+    } catch (dbConnError: any) {
+      console.error('❌ Contact form: DB connection failed:', dbConnError.message)
       return NextResponse.json(
-        { error: isTimeout ? 'Database connection timed out. Please try again later.' : 'Failed to save message.' },
-        { status: isTimeout ? 504 : 500 }
+        { error: 'Unable to save your message right now. Please try again later.' },
+        { status: 503 }
       )
     }
+
+    // Save to database
+    const savedMessage = await addMessage({
+      name,
+      email,
+      subject: subject || 'No Subject',
+      message
+    })
+    console.log('✅ New contact submission saved:', savedMessage.id)
 
     // Send email notification (don't fail the request if email fails)
     try {
@@ -123,10 +120,10 @@ export async function POST(request: NextRequest) {
       message: 'Thank you for your message! We will get back to you soon.' 
     })
 
-  } catch (error) {
-    console.error('Contact form error:', error)
+  } catch (error: any) {
+    console.error('❌ Contact form error:', error.message)
     return NextResponse.json(
-      { error: 'Failed to process request. Please try again.' },
+      { error: 'Failed to save message: ' + error.message },
       { status: 500 }
     )
   }

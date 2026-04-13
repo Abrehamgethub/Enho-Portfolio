@@ -3,13 +3,9 @@ import connectDB, { safeConnectDB, withTimeout } from './mongodb'
 import MessageModel, { IMessage } from './models/Message'
 import UpdateModel, { IUpdate } from './models/Update'
 
-// Export connectToDatabase for new API routes — never throws, never hangs
+// Export connectToDatabase for API routes — throws on failure so callers see errors
 export async function connectToDatabase() {
-  const conn = await safeConnectDB()
-  if (!conn) {
-    console.warn('⚠️ connectToDatabase: MongoDB unavailable, operations will use fallbacks')
-  }
-  return conn
+  return await connectDB()
 }
 
 export interface Message {
@@ -43,41 +39,17 @@ function docToMessage(doc: IMessage): Message {
   }
 }
 
-// In-memory storage for fallback when MongoDB is not available
-let inMemoryUpdates: Update[] = []
-
-// Helper to check if MongoDB is available — safe, never throws or hangs
-async function useMongoDB(): Promise<boolean> {
-  if (!process.env.MONGODB_URI) return false
-  try {
-    const conn = await safeConnectDB()
-    return conn !== null
-  } catch {
-    return false
-  }
-}
-
-// Message operations
+// Message operations — all throw on DB failure (no silent fallback)
 export async function getMessages(): Promise<Message[]> {
-  try {
-    const conn = await connectToDatabase()
-    if (!conn) return []
-    const docs = await withTimeout(MessageModel.find().sort({ date: -1 }).exec(), 4000, [])
-    return Array.isArray(docs) ? docs.map(docToMessage) : []
-  } catch (error) {
-    console.error('getMessages failed:', error)
-    return []
-  }
+  await connectToDatabase()
+  const docs = await withTimeout(MessageModel.find().sort({ date: -1 }).exec(), 8000)
+  return docs.map(docToMessage)
 }
 
 export async function getMessage(id: string): Promise<Message | null> {
   await connectToDatabase()
-  try {
-    const doc = await MessageModel.findById(id)
-    return doc ? docToMessage(doc) : null
-  } catch {
-    return null
-  }
+  const doc = await MessageModel.findById(id)
+  return doc ? docToMessage(doc) : null
 }
 
 export async function addMessage(data: Omit<Message, 'id' | 'date' | 'read'>): Promise<Message> {
@@ -87,30 +59,21 @@ export async function addMessage(data: Omit<Message, 'id' | 'date' | 'read'>): P
     email: data.email,
     subject: data.subject,
     message: data.message
-  }), 5000, null)
+  }), 8000)
   
-  if (!doc) throw new Error('Failed to save message to database')
   return docToMessage(doc)
 }
 
 export async function updateMessage(id: string, data: Partial<Message>): Promise<Message | null> {
   await connectToDatabase()
-  try {
-    const doc = await withTimeout(MessageModel.findByIdAndUpdate(id, data, { new: true }), 5000, null)
-    return doc ? docToMessage(doc) : null
-  } catch {
-    return null
-  }
+  const doc = await withTimeout(MessageModel.findByIdAndUpdate(id, data, { new: true }), 8000)
+  return doc ? docToMessage(doc) : null
 }
 
 export async function deleteMessage(id: string): Promise<boolean> {
   await connectToDatabase()
-  try {
-    const result = await withTimeout(MessageModel.findByIdAndDelete(id), 5000, null)
-    return !!result
-  } catch {
-    return false
-  }
+  const result = await withTimeout(MessageModel.findByIdAndDelete(id), 8000)
+  return !!result
 }
 
 export async function markMessageAsRead(id: string): Promise<Message | null> {
@@ -124,43 +87,28 @@ export async function getUnreadCount(): Promise<number> {
 
 // Stats
 export async function getStats() {
-  try {
-    const conn = await connectToDatabase()
-    if (!conn) {
-      return { totalMessages: 0, unreadMessages: 0, totalTeam: 3, recentMessages: [] }
-    }
-    const messages = await getMessages()
-    const unreadCount = await getUnreadCount()
-    
-    return {
-      totalMessages: messages.length,
-      unreadMessages: unreadCount,
-      totalTeam: 3,
-      recentMessages: messages.slice(0, 5)
-    }
-  } catch (error) {
-    console.error('getStats failed:', error)
-    return { totalMessages: 0, unreadMessages: 0, totalTeam: 3, recentMessages: [] }
+  await connectToDatabase()
+  const messages = await getMessages()
+  const unreadCount = await getUnreadCount()
+  
+  return {
+    totalMessages: messages.length,
+    unreadMessages: unreadCount,
+    totalTeam: 3,
+    recentMessages: messages.slice(0, 5)
   }
 }
 
 export async function getUpdates(): Promise<Update[]> {
-  try {
-    const conn = await connectToDatabase()
-    if (!conn) return []
-    const docs = await withTimeout(UpdateModel.find({ active: true }).sort({ createdAt: -1 }).exec(), 4000, null)
-    if (!docs) return []
-    return docs.map((doc: IUpdate) => ({
-      id: doc._id.toString(),
-      text: doc.text,
-      emoji: doc.emoji,
-      createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
-      active: doc.active
-    }))
-  } catch (error) {
-    console.error('getUpdates failed:', error)
-    return []
-  }
+  await connectToDatabase()
+  const docs = await withTimeout(UpdateModel.find({ active: true }).sort({ createdAt: -1 }).exec(), 8000)
+  return docs.map((doc: IUpdate) => ({
+    id: doc._id.toString(),
+    text: doc.text,
+    emoji: doc.emoji,
+    createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
+    active: doc.active
+  }))
 }
 
 export async function addUpdate(data: Omit<Update, 'id' | 'createdAt'>): Promise<Update> {
@@ -169,10 +117,8 @@ export async function addUpdate(data: Omit<Update, 'id' | 'createdAt'>): Promise
     text: data.text,
     emoji: data.emoji || '📢',
     active: data.active !== false
-  }), 5000, null)
-  
-  if (!doc) throw new Error('Failed to save update to database')
-  
+  }), 8000)
+
   return {
     id: doc._id.toString(),
     text: doc.text,
@@ -184,29 +130,19 @@ export async function addUpdate(data: Omit<Update, 'id' | 'createdAt'>): Promise
 
 export async function updateUpdate(id: string, data: Partial<Update>): Promise<Update | null> {
   await connectToDatabase()
-  try {
-    const doc = await withTimeout(UpdateModel.findByIdAndUpdate(id, data, { new: true }), 5000, null)
-    if (!doc) return null
-    return {
-      id: doc._id.toString(),
-      text: doc.text,
-      emoji: doc.emoji,
-      createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
-      active: doc.active
-    }
-  } catch (error) {
-    console.error('updateUpdate failed:', error)
-    return null
+  const doc = await withTimeout(UpdateModel.findByIdAndUpdate(id, data, { new: true }), 8000)
+  if (!doc) return null
+  return {
+    id: doc._id.toString(),
+    text: doc.text,
+    emoji: doc.emoji,
+    createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : new Date(doc.createdAt).toISOString(),
+    active: doc.active
   }
 }
 
 export async function deleteUpdate(id: string): Promise<boolean> {
   await connectToDatabase()
-  try {
-    const result = await withTimeout(UpdateModel.findByIdAndDelete(id), 5000, null)
-    return !!result
-  } catch (error) {
-    console.error('deleteUpdate failed:', error)
-    return false
-  }
+  const result = await withTimeout(UpdateModel.findByIdAndDelete(id), 8000)
+  return !!result
 }

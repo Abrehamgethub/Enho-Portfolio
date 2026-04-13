@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { safeConnectDB, withTimeout } from '@/lib/mongodb'
+import connectDB, { withTimeout } from '@/lib/mongodb'
 import Guest from '@/lib/models/Guest'
 import { requireAuth } from '@/lib/auth-middleware'
 import { initialGuests } from '@/lib/guests-data'
@@ -9,29 +9,18 @@ export const dynamic = 'force-dynamic'
 // GET all guests
 export async function GET(request: NextRequest) {
   try {
-    const conn = await safeConnectDB()
-    if (!conn) {
-      console.warn('Guests API: MongoDB unavailable, returning static fallback')
-      return NextResponse.json({ guests: initialGuests, source: 'static' })
-    }
+    await connectDB()
 
-    const count = await withTimeout(Guest.countDocuments().exec(), 3000, -1)
-    if (count === -1) {
-      // Timeout — return fallback
-      return NextResponse.json({ guests: initialGuests, source: 'static' })
-    }
-    if (count === 0) {
-      try {
-        const toInsert = initialGuests.map(g => {
-          const { id, _id, ...rest } = g as any;
-          return rest;
-        });
-        const inserted = await Guest.insertMany(toInsert);
-        return NextResponse.json({ guests: inserted, source: 'db-seeded' });
-      } catch (e) {
-        console.error('Guests seed error:', e);
-        return NextResponse.json({ guests: initialGuests, source: 'static' });
-      }
+    const totalCount = await withTimeout(Guest.countDocuments({}), 5000)
+    
+    // Seed DB if empty
+    if (totalCount === 0) {
+      console.log('📦 Guests collection empty — seeding with initial data')
+      const toInsert = initialGuests.map(g => {
+        const { id, _id, ...rest } = g as any;
+        return rest;
+      });
+      await withTimeout(Guest.insertMany(toInsert), 8000);
     }
 
     const { searchParams } = new URL(request.url)
@@ -42,18 +31,16 @@ export async function GET(request: NextRequest) {
     
     const guests = await withTimeout(
       Guest.find(query).sort({ order: 1, createdAt: -1 }).exec(),
-      4000,
-      null
+      8000
     )
     
-    if (!guests || guests.length === 0) {
-      return NextResponse.json({ guests: initialGuests, source: 'static' })
-    }
-    
-    return NextResponse.json({ guests })
-  } catch (error) {
-    console.error('API Error (GET /api/guests):', error)
-    return NextResponse.json({ guests: initialGuests, source: 'static-fallback' })
+    return NextResponse.json({ guests, source: 'db' })
+  } catch (error: any) {
+    console.error('❌ Guests GET failed:', error.message)
+    return NextResponse.json(
+      { error: 'Database connection failed: ' + error.message, guests: [] },
+      { status: 503 }
+    )
   }
 }
 
@@ -63,10 +50,7 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const conn = await safeConnectDB()
-    if (!conn) {
-      return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
-    }
+    await connectDB()
 
     const body = await request.json()
 
@@ -93,8 +77,8 @@ export async function POST(request: NextRequest) {
     })
     
     return NextResponse.json({ success: true, guest })
-  } catch (error) {
-    console.error('Error adding guest:', error)
-    return NextResponse.json({ error: 'Failed to add guest' }, { status: 500 })
+  } catch (error: any) {
+    console.error('❌ Guest POST failed:', error.message)
+    return NextResponse.json({ error: 'Failed to add guest: ' + error.message }, { status: 503 })
   }
 }
