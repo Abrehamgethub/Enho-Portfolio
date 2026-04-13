@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
-import Guest from '@/lib/models/Guest'
+import { db } from '@/lib/firebase'
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
 
 // DELETE a guest (admin only)
@@ -12,8 +12,7 @@ export async function DELETE(
   if (authError) return authError
 
   try {
-    await connectDB()
-    await Guest.findByIdAndDelete((await params).id)
+    await deleteDoc(doc(db, 'guests', (await params).id))
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting guest:', error)
@@ -30,7 +29,6 @@ export async function PATCH(
   if (authError) return authError
 
   try {
-    await connectDB()
     const body = await request.json()
 
     if ('episodeUrl' in body && !String(body.episodeUrl || '').trim()) {
@@ -44,13 +42,9 @@ export async function PATCH(
       body.photo = ''
     }
     
-    const guest = await Guest.findByIdAndUpdate(
-      (await params).id,
-      body,
-      { new: true }
-    )
+    await updateDoc(doc(db, 'guests', (await params).id), body)
     
-    return NextResponse.json({ success: true, guest })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error updating guest:', error)
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 })

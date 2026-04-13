@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { deleteUpdate, updateUpdate } from '@/lib/db'
+import { db } from '@/lib/firebase'
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
 
 // DELETE an update (admin only)
@@ -12,11 +13,7 @@ export async function DELETE(
 
   try {
     const { id } = await params
-    const success = await deleteUpdate(id)
-    
-    if (!success) {
-      return NextResponse.json({ error: 'Update not found' }, { status: 404 })
-    }
+    await deleteDoc(doc(db, 'updates', id))
     
     return NextResponse.json({ success: true })
   } catch (error) {
@@ -37,13 +34,9 @@ export async function PATCH(
     const { id } = await params
     const body = await request.json()
     
-    const update = await updateUpdate(id, { active: body.active })
+    await updateDoc(doc(db, 'updates', id), { active: body.active })
     
-    if (!update) {
-      return NextResponse.json({ error: 'Update not found' }, { status: 404 })
-    }
-    
-    return NextResponse.json({ success: true, update })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error updating update:', error)
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 })

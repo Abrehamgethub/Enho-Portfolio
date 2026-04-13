@@ -1,46 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Training from '@/lib/models/Training'
-import connectDB, { withTimeout } from '@/lib/mongodb'
+import { db } from '@/lib/firebase'
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
-import { initialTrainings } from '@/lib/trainings-data'
 
 export const dynamic = 'force-dynamic'
 
 // GET all trainings
 export async function GET(request: NextRequest) {
   try {
-    await connectDB()
-
     const { searchParams } = new URL(request.url)
     const featured = searchParams.get('featured')
     const category = searchParams.get('category')
     
-    let query: any = {}
-    if (featured === 'true') {
-      query.featured = true
-    }
-    if (category) {
-      query.category = category
-    }
+    let constraints: any[] = []
+    if (featured === 'true') constraints.push(where('featured', '==', true))
+    if (category) constraints.push(where('category', '==', category))
 
-    const totalCount = await withTimeout(Training.countDocuments({}), 5000)
+    const q = query(collection(db, 'trainings'), ...constraints)
+    const snapshot = await getDocs(q)
     
-    // Seed DB if empty — this is the ONLY valid reason to use initial data
-    if (totalCount === 0) {
-      console.log('📦 Trainings collection empty — seeding with initial data')
-      const toInsert = initialTrainings.map(t => {
-        const { _id, ...rest } = t as any;
-        return rest;
-      });
-      await withTimeout(Training.insertMany(toInsert), 8000);
-    }
+    // Sort in memory to avoid Firestore index requirements
+    const trainings = snapshot.docs.map(doc => ({
+      _id: doc.id,
+      ...doc.data()
+    })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
-    const trainings = await withTimeout(
-      Training.find(query).sort({ date: -1 }).exec(),
-      8000
-    )
-
-    return NextResponse.json({ trainings, source: 'db' })
+    return NextResponse.json({ trainings, source: 'firebase' })
   } catch (error: any) {
     console.error('❌ Trainings GET failed:', error.message)
     return NextResponse.json(
@@ -56,13 +41,10 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
-
     const body = await request.json()
-    const training = new Training(body)
-    await withTimeout(training.save(), 8000)
+    const docRef = await addDoc(collection(db, 'trainings'), body)
     
-    return NextResponse.json(training, { status: 201 })
+    return NextResponse.json({ _id: docRef.id, ...body }, { status: 201 })
   } catch (error: any) {
     console.error('❌ Training POST failed:', error.message)
     return NextResponse.json(
@@ -78,8 +60,6 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
-
     const body = await request.json()
     const { id, _id, ...updateData } = body
     const trainingId = id || _id
@@ -88,16 +68,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Training ID is required' }, { status: 400 })
     }
     
-    const training = await withTimeout(
-      Training.findByIdAndUpdate(trainingId, updateData, { new: true, runValidators: true }),
-      8000
-    )
-    
-    if (!training) {
-      return NextResponse.json({ error: 'Training not found' }, { status: 404 })
-    }
-    
-    return NextResponse.json(training)
+    await updateDoc(doc(db, 'trainings', trainingId), updateData)
+    return NextResponse.json({ _id: trainingId, ...updateData })
   } catch (error: any) {
     console.error('❌ Training PUT failed:', error.message)
     return NextResponse.json(
@@ -113,8 +85,6 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
-
     const { searchParams } = new URL(request.url)
     const trainingId = searchParams.get('id') || searchParams.get('_id')
     
@@ -122,12 +92,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Training ID is required' }, { status: 400 })
     }
     
-    const training = await withTimeout(Training.findByIdAndDelete(trainingId), 8000)
-    
-    if (!training) {
-      return NextResponse.json({ error: 'Training not found' }, { status: 404 })
-    }
-    
+    await deleteDoc(doc(db, 'trainings', trainingId))
     return NextResponse.json({ message: 'Training deleted successfully' })
   } catch (error: any) {
     console.error('❌ Training DELETE failed:', error.message)

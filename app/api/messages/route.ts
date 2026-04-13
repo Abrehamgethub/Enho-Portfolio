@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getMessages, addMessage } from '@/lib/db'
+import { db } from '@/lib/firebase'
+import { collection, getDocs, addDoc, query, orderBy } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
 
-// Disable caching for this route
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
@@ -12,8 +12,15 @@ export async function GET(request: NextRequest) {
   if (authError) return authError
 
   try {
-    const messages = await getMessages()
-    return NextResponse.json({ messages, source: 'db' }, {
+    const q = query(collection(db, 'messages'), orderBy('date', 'desc'))
+    const snapshot = await getDocs(q)
+    
+    const messages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }))
+    
+    return NextResponse.json({ messages, source: 'firebase' }, {
       headers: {
         'Cache-Control': 'no-store, no-cache, must-revalidate',
       },
@@ -27,7 +34,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST new message (from contact form)
+// POST new message (from contact form / if ever used here instead of /api/contact)
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -40,14 +47,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const newMessage = await addMessage({
+    const docRef = await addDoc(collection(db, 'messages'), {
       name,
       email,
       subject: subject || 'No Subject',
-      message
+      message,
+      read: false,
+      date: new Date().toISOString()
     })
 
-    return NextResponse.json({ success: true, message: newMessage })
+    return NextResponse.json({ success: true, message: { id: docRef.id, name, email, subject, message } })
   } catch (error: any) {
     console.error('❌ Message POST failed:', error.message)
     return NextResponse.json(

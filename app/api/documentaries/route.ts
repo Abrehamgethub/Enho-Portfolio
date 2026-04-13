@@ -1,46 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
-import Documentary from '@/lib/models/Documentary'
-import connectDB, { withTimeout } from '@/lib/mongodb'
+import { db } from '@/lib/firebase'
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
-import { initialDocumentaries } from '@/lib/documentaries-data'
 
 export const dynamic = 'force-dynamic'
 
 // GET all documentaries
 export async function GET(request: NextRequest) {
   try {
-    await connectDB()
-
     const { searchParams } = new URL(request.url)
     const featured = searchParams.get('featured')
     const language = searchParams.get('language')
     
-    let query: any = {}
-    if (featured === 'true') {
-      query.featured = true
-    }
-    if (language) {
-      query.language = language
-    }
+    let constraints: any[] = []
+    if (featured === 'true') constraints.push(where('featured', '==', true))
+    if (language) constraints.push(where('language', '==', language))
 
-    const totalCount = await withTimeout(Documentary.countDocuments({}), 5000)
+    const q = query(collection(db, 'documentaries'), ...constraints)
+    const snapshot = await getDocs(q)
     
-    // Seed DB if empty
-    if (totalCount === 0) {
-      console.log('📦 Documentaries collection empty — seeding with initial data')
-      const toInsert = initialDocumentaries.map(d => {
-        const { _id, ...rest } = d as any;
-        return rest;
-      });
-      await withTimeout(Documentary.insertMany(toInsert), 8000);
-    }
+    const documentaries = snapshot.docs.map(doc => ({
+      _id: doc.id,
+      ...doc.data()
+    })).sort((a: any, b: any) => new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime())
 
-    const documentaries = await withTimeout(
-      Documentary.find(query).sort({ releaseDate: -1 }).exec(),
-      8000
-    )
-
-    return NextResponse.json({ documentaries, source: 'db' })
+    return NextResponse.json({ documentaries, source: 'firebase' })
   } catch (error: any) {
     console.error('❌ Documentaries GET failed:', error.message)
     return NextResponse.json(
@@ -56,13 +40,10 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
-
     const body = await request.json()
-    const documentary = new Documentary(body)
-    await withTimeout(documentary.save(), 8000)
+    const docRef = await addDoc(collection(db, 'documentaries'), body)
     
-    return NextResponse.json(documentary, { status: 201 })
+    return NextResponse.json({ _id: docRef.id, ...body }, { status: 201 })
   } catch (error: any) {
     console.error('❌ Documentary POST failed:', error.message)
     return NextResponse.json(
@@ -78,8 +59,6 @@ export async function PUT(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
-
     const body = await request.json()
     const { id, _id, ...updateData } = body
     const docId = id || _id
@@ -88,16 +67,8 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json({ error: 'Documentary ID is required' }, { status: 400 })
     }
     
-    const documentary = await withTimeout(
-      Documentary.findByIdAndUpdate(docId, updateData, { new: true, runValidators: true }),
-      8000
-    )
-    
-    if (!documentary) {
-      return NextResponse.json({ error: 'Documentary not found' }, { status: 404 })
-    }
-    
-    return NextResponse.json(documentary)
+    await updateDoc(doc(db, 'documentaries', docId), updateData)
+    return NextResponse.json({ _id: docId, ...updateData })
   } catch (error: any) {
     console.error('❌ Documentary PUT failed:', error.message)
     return NextResponse.json(
@@ -113,8 +84,6 @@ export async function DELETE(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
-
     const { searchParams } = new URL(request.url)
     const docId = searchParams.get('id') || searchParams.get('_id')
     
@@ -122,12 +91,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Documentary ID is required' }, { status: 400 })
     }
     
-    const documentary = await withTimeout(Documentary.findByIdAndDelete(docId), 8000)
-    
-    if (!documentary) {
-      return NextResponse.json({ error: 'Documentary not found' }, { status: 404 })
-    }
-    
+    await deleteDoc(doc(db, 'documentaries', docId))
     return NextResponse.json({ message: 'Documentary deleted successfully' })
   } catch (error: any) {
     console.error('❌ Documentary DELETE failed:', error.message)

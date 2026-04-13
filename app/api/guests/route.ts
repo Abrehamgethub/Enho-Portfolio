@@ -1,40 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB, { withTimeout } from '@/lib/mongodb'
-import Guest from '@/lib/models/Guest'
+import { db } from '@/lib/firebase'
+import { collection, getDocs, addDoc, query, where } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
-import { initialGuests } from '@/lib/guests-data'
 
 export const dynamic = 'force-dynamic'
 
 // GET all guests
 export async function GET(request: NextRequest) {
   try {
-    await connectDB()
-
-    const totalCount = await withTimeout(Guest.countDocuments({}), 5000)
-    
-    // Seed DB if empty
-    if (totalCount === 0) {
-      console.log('📦 Guests collection empty — seeding with initial data')
-      const toInsert = initialGuests.map(g => {
-        const { id, _id, ...rest } = g as any;
-        return rest;
-      });
-      await withTimeout(Guest.insertMany(toInsert), 8000);
-    }
-
     const { searchParams } = new URL(request.url)
     const featured = searchParams.get('featured')
     
-    const query: any = {}
-    if (featured === 'true') query.featured = true
+    let constraints: any[] = []
+    if (featured === 'true') constraints.push(where('featured', '==', true))
     
-    const guests = await withTimeout(
-      Guest.find(query).sort({ order: 1, createdAt: -1 }).exec(),
-      8000
-    )
+    const q = query(collection(db, 'guests'), ...constraints)
+    const snapshot = await getDocs(q)
     
-    return NextResponse.json({ guests, source: 'db' })
+    const guests = snapshot.docs.map(doc => ({
+      _id: doc.id,
+      id: doc.id,
+      ...doc.data()
+    })).sort((a: any, b: any) => {
+      if (a.order !== b.order && a.order !== undefined && b.order !== undefined) {
+         return a.order - b.order
+      }
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    })
+    
+    return NextResponse.json({ guests, source: 'firebase' })
   } catch (error: any) {
     console.error('❌ Guests GET failed:', error.message)
     return NextResponse.json(
@@ -50,8 +44,6 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
-
     const body = await request.json()
 
     if (!body.episodeUrl || !String(body.episodeUrl).trim()) {
@@ -61,7 +53,7 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    const guest = await Guest.create({
+    const docRef = await addDoc(collection(db, 'guests'), {
       name: body.name,
       nameAmharic: body.nameAmharic,
       title: body.title,
@@ -73,10 +65,11 @@ export async function POST(request: NextRequest) {
       episodeDate: body.episodeDate,
       programName: body.programName,
       featured: body.featured || false,
-      order: body.order || 0
+      order: body.order || 0,
+      createdAt: new Date().toISOString()
     })
     
-    return NextResponse.json({ success: true, guest })
+    return NextResponse.json({ success: true, guest: { _id: docRef.id, id: docRef.id, ...body } })
   } catch (error: any) {
     console.error('❌ Guest POST failed:', error.message)
     return NextResponse.json({ error: 'Failed to add guest: ' + error.message }, { status: 503 })

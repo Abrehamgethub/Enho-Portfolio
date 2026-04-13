@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addMessage } from '@/lib/db'
-import connectDB from '@/lib/mongodb'
+import { db } from '@/lib/firebase'
+import { collection, addDoc } from 'firebase/firestore'
 import nodemailer from 'nodemailer'
 
 // Email notification function
@@ -66,11 +66,13 @@ export async function POST(request: NextRequest) {
     let savedMessage;
     try {
       // 1. Save to database FIRST
-      savedMessage = await addMessage({
+      savedMessage = await addDoc(collection(db, "messages"), {
         name,
         email,
         subject: subject || 'No Subject',
-        message
+        message,
+        read: false,
+        date: new Date().toISOString()
       })
       console.log('✅ New contact submission saved:', savedMessage.id)
     } catch (error: any) {

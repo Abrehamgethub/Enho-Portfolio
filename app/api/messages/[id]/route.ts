@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getMessage, updateMessage, deleteMessage, markMessageAsRead } from '@/lib/db'
+import { db } from '@/lib/firebase'
+import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
+
+export const dynamic = 'force-dynamic'
 
 // GET single message (admin only)
 export async function GET(
@@ -10,11 +13,18 @@ export async function GET(
   const authError = requireAuth(request)
   if (authError) return authError
 
-  const message = await getMessage((await params).id)
-  if (!message) {
-    return NextResponse.json({ error: 'Message not found' }, { status: 404 })
+  try {
+    const docRef = doc(db, 'messages', (await params).id)
+    const docSnap = await getDoc(docRef)
+
+    if (!docSnap.exists()) {
+      return NextResponse.json({ error: 'Message not found' }, { status: 404 })
+    }
+
+    return NextResponse.json({ message: { id: docSnap.id, ...docSnap.data() } })
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Failed to fetch message: ' + error.message }, { status: 500 })
   }
-  return NextResponse.json({ message })
 }
 
 // PATCH update message (admin only)
@@ -27,22 +37,22 @@ export async function PATCH(
 
   try {
     const body = await request.json()
+    const docRef = doc(db, 'messages', (await params).id)
     
+    let updateData: any = {}
+
     if (body.markAsRead) {
-      const message = await markMessageAsRead((await params).id)
-      if (!message) {
-        return NextResponse.json({ error: 'Message not found' }, { status: 404 })
-      }
-      return NextResponse.json({ success: true, message })
+      updateData.read = true
+    } else {
+      updateData = body
     }
 
-    const message = await updateMessage((await params).id, body)
-    if (!message) {
-      return NextResponse.json({ error: 'Message not found' }, { status: 404 })
-    }
-    return NextResponse.json({ success: true, message })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update message' }, { status: 500 })
+    await updateDoc(docRef, updateData)
+    const updatedDoc = await getDoc(docRef)
+    
+    return NextResponse.json({ success: true, message: { id: updatedDoc.id, ...updatedDoc.data() } })
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Failed to update message: ' + error.message }, { status: 500 })
   }
 }
 
@@ -54,9 +64,12 @@ export async function DELETE(
   const authError = requireAuth(request)
   if (authError) return authError
 
-  const deleted = await deleteMessage((await params).id)
-  if (!deleted) {
-    return NextResponse.json({ error: 'Message not found' }, { status: 404 })
+  try {
+    const docRef = doc(db, 'messages', (await params).id)
+    await deleteDoc(docRef)
+    
+    return NextResponse.json({ success: true })
+  } catch (error: any) {
+    return NextResponse.json({ error: 'Failed to delete message: ' + error.message }, { status: 500 })
   }
-  return NextResponse.json({ success: true })
 }

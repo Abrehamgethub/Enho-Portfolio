@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getUpdates, addUpdate } from '@/lib/db'
+import { db } from '@/lib/firebase'
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
 
-function getTimeAgo(date: Date): string {
-  const seconds = Math.floor((new Date().getTime() - new Date(date).getTime()) / 1000)
+function getTimeAgo(dateString: string): string {
+  const date = new Date(dateString)
+  if (isNaN(date.getTime())) return 'Just now'
+  
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000)
   
   if (seconds < 60) return 'Just now'
   const minutes = Math.floor(seconds / 60)
@@ -20,17 +24,26 @@ function getTimeAgo(date: Date): string {
 // GET all updates
 export async function GET() {
   try {
-    const updates = await getUpdates()
+    const q = query(collection(db, 'updates'))
+    const snapshot = await getDocs(q)
+    
+    let updates = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as any))
+    
+    // Filter active and sort
+    updates = updates.filter(u => u.active !== false).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     
     // Format for frontend
     const formattedUpdates = updates.slice(0, 10).map(update => ({
       id: update.id,
-      text: `${update.emoji} ${update.text}`,
-      time: getTimeAgo(new Date(update.createdAt)),
+      text: `${update.emoji || '📢'} ${update.text}`,
+      time: getTimeAgo(update.createdAt),
       createdAt: update.createdAt
     }))
     
-    return NextResponse.json({ updates: formattedUpdates, source: 'db' })
+    return NextResponse.json({ updates: formattedUpdates, source: 'firebase' })
   } catch (error: any) {
     console.error('❌ Updates GET failed:', error.message)
     return NextResponse.json(
@@ -47,9 +60,14 @@ export async function POST(request: NextRequest) {
   
   try {
     const { text, emoji } = await request.json()
-    const update = await addUpdate({ text, emoji: emoji || '📢', active: true })
+    const docRef = await addDoc(collection(db, 'updates'), {
+      text,
+      emoji: emoji || '📢',
+      active: true,
+      createdAt: new Date().toISOString()
+    })
     
-    return NextResponse.json({ success: true, update }, { status: 201 })
+    return NextResponse.json({ success: true, update: { id: docRef.id, text, emoji } }, { status: 201 })
   } catch (error: any) {
     console.error('❌ Update POST failed:', error.message)
     return NextResponse.json(

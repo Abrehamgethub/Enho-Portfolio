@@ -1,12 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getDoctorById, getAllDoctorIds } from '@/lib/doctors-data'
-import { connectToDatabase } from '@/lib/db'
-import TeamMember from '@/lib/models/TeamMember'
 import DoctorProfile from './DoctorProfile'
-
-// Removed force-dynamic to allow generateStaticParams to statically build these pages
-// which prevents 404s if MongoDB is down
+import { db } from '@/lib/firebase'
+import { collection, getDocs, query, where } from 'firebase/firestore'
 
 // Required for static export with dynamic routes
 export async function generateStaticParams() {
@@ -28,26 +25,13 @@ export default async function DoctorPage({ params }: PageProps) {
   const matchingStaticId = doctors.find(docId => docId.toLowerCase() === id.toLowerCase())
   const staticDoctor = matchingStaticId ? getDoctorById(matchingStaticId) : null
   
-  // 2. Get dynamic data from MongoDB (overrides / new members)
+  // 2. Get dynamic data from Firebase (overrides / new members)
   let member = null
   try {
-    try {
-      await connectToDatabase()
-    } catch (dbConnError) {
-      console.error('Database connection failed in team detail page, using static fallback:', dbConnError)
-    }
-
-    // Try finding by custom 'id' (slug) first, then by MongoDB ObjectId
-    // Use regex for case-insensitive search if available, or just case-insensitive find
-    member = await TeamMember.findOne({ 
-      $or: [
-        { id: { $regex: new RegExp('^' + id + '$', 'i') } },
-        { id: id }
-      ]
-    }).lean()
-    
-    if (!member && id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id)) {
-      member = await TeamMember.findById(id).lean()
+    const q = query(collection(db, 'team'), where('id', '==', id))
+    const snap = await getDocs(q)
+    if (!snap.empty) {
+      member = snap.docs[0].data()
     }
   } catch (error) {
     console.error('Error fetching team member in detail page:', error)
@@ -79,14 +63,13 @@ export default async function DoctorPage({ params }: PageProps) {
     volunteerWork: []
   }
 
-  // Convert Mongoose document to plain object if needed and merge
-  const dbData = member ? JSON.parse(JSON.stringify(member)) : {}
+  const dbData = member || {}
   
   const mergedDoctor = {
     ...baseData,
     ...dbData,
     // Ensure ID is consistent (favor the one that worked)
-    id: dbData.id || baseData.id || (dbData._id ? String(dbData._id) : id)
+    id: dbData.id || baseData.id || id
   }
 
   return <DoctorProfile doctor={mergedDoctor} />

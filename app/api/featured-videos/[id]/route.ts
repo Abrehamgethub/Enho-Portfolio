@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB from '@/lib/mongodb'
-import FeaturedVideo from '@/lib/models/FeaturedVideo'
+import { db } from '@/lib/firebase'
+import { doc, updateDoc, deleteDoc } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
 
 // DELETE a featured video (admin only)
@@ -12,8 +12,7 @@ export async function DELETE(
   if (authError) return authError
 
   try {
-    await connectDB()
-    await FeaturedVideo.findByIdAndDelete((await params).id)
+    await deleteDoc(doc(db, 'featured-videos', (await params).id))
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error deleting featured video:', error)
@@ -30,20 +29,15 @@ export async function PATCH(
   if (authError) return authError
 
   try {
-    await connectDB()
     const body = await request.json()
     
-    const video = await FeaturedVideo.findByIdAndUpdate(
-      (await params).id,
-      { 
-        ...(body.active !== undefined && { active: body.active }),
-        ...(body.order !== undefined && { order: body.order }),
-        ...(body.category && { category: body.category })
-      },
-      { new: true }
-    )
+    await updateDoc(doc(db, 'featured-videos', (await params).id), { 
+      ...(body.active !== undefined && { active: body.active }),
+      ...(body.order !== undefined && { order: body.order }),
+      ...(body.category && { category: body.category })
+    })
     
-    return NextResponse.json({ success: true, video })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error('Error updating featured video:', error)
     return NextResponse.json({ error: 'Failed to update' }, { status: 500 })

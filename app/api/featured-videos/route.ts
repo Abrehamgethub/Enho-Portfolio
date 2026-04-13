@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import connectDB, { withTimeout } from '@/lib/mongodb'
-import FeaturedVideo from '@/lib/models/FeaturedVideo'
+import { db } from '@/lib/firebase'
+import { collection, getDocs, addDoc, query, where } from 'firebase/firestore'
 import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
@@ -8,33 +8,29 @@ export const dynamic = 'force-dynamic'
 // GET featured videos
 export async function GET(request: NextRequest) {
   try {
-    await connectDB()
-    
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const activeOnly = searchParams.get('active') !== 'false'
     
-    const query: any = {}
-    if (category) query.category = category
-    if (activeOnly) query.active = true
+    let constraints: any[] = []
+    if (category) constraints.push(where('category', '==', category))
+    if (activeOnly) constraints.push(where('active', '==', true))
     
-    const videos = await withTimeout(
-      FeaturedVideo.find(query).sort({ order: 1, createdAt: -1 }).exec(),
-      8000
-    )
+    const q = query(collection(db, 'featured-videos'), ...constraints)
+    const snapshot = await getDocs(q)
     
-    return NextResponse.json({ 
-      videos: videos.map(v => ({
-        id: v.videoId,
-        title: v.title,
-        thumbnail: v.thumbnail,
-        category: v.category,
-        order: v.order,
-        active: v.active,
-        _id: v._id
-      })),
-      source: 'db'
+    const videos = snapshot.docs.map(doc => ({
+      _id: doc.id,
+      id: doc.data().videoId, // ensure frontend mappings still work
+      ...doc.data()
+    })).sort((a: any, b: any) => {
+      if (a.order !== b.order && a.order !== undefined && b.order !== undefined) {
+         return a.order - b.order
+      }
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
     })
+    
+    return NextResponse.json({ videos, source: 'firebase' })
   } catch (error: any) {
     console.error('❌ Featured videos GET failed:', error.message)
     return NextResponse.json(
@@ -50,25 +46,27 @@ export async function POST(request: NextRequest) {
   if (authError) return authError
 
   try {
-    await connectDB()
     const body = await request.json()
     
-    // Check if video already exists
-    const existing = await FeaturedVideo.findOne({ videoId: body.videoId })
-    if (existing) {
+    // Check if video already exists in Firestore memory
+    const existingQ = query(collection(db, 'featured-videos'), where('videoId', '==', body.videoId))
+    const existingSnap = await getDocs(existingQ)
+    
+    if (!existingSnap.empty) {
       return NextResponse.json({ error: 'Video already added' }, { status: 400 })
     }
     
-    const video = await FeaturedVideo.create({
+    const docRef = await addDoc(collection(db, 'featured-videos'), {
       videoId: body.videoId,
       title: body.title,
       thumbnail: body.thumbnail,
       category: body.category || 'general',
       order: body.order || 0,
-      active: true
+      active: true,
+      createdAt: new Date().toISOString()
     })
     
-    return NextResponse.json({ success: true, video })
+    return NextResponse.json({ success: true, video: { _id: docRef.id, id: body.videoId, ...body } })
   } catch (error: any) {
     console.error('❌ Featured video POST failed:', error.message)
     return NextResponse.json({ error: 'Failed to add video: ' + error.message }, { status: 503 })
