@@ -44,6 +44,11 @@ async function connectDB(): Promise<typeof mongoose> {
       maxPoolSize: 5,
       retryWrites: true,
       w: 'majority' as const,
+      serverApi: {
+        version: '1' as const,
+        strict: true,
+        deprecationErrors: true,
+      }
     }
 
     console.log('🔌 Connecting to MongoDB...')
