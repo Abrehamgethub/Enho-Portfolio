@@ -63,56 +63,59 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Connect to DB — must succeed for message to be saved
+    let savedMessage;
     try {
-      await connectDB()
-    } catch (dbConnError: any) {
-      console.error('❌ Contact form: DB connection failed:', dbConnError.message)
+      // 1. Save to database FIRST
+      savedMessage = await addMessage({
+        name,
+        email,
+        subject: subject || 'No Subject',
+        message
+      })
+      console.log('✅ New contact submission saved:', savedMessage.id)
+    } catch (error: any) {
+      // Return the EXACT error message to not hide silent failures
+      console.error("CONTACT API ERROR:", error);
       return NextResponse.json(
-        { error: 'Unable to save your message right now. Please try again later.' },
-        { status: 503 }
-      )
+        { error: error.message || 'Database write failed' },
+        { status: 500 }
+      );
     }
 
-    // Save to database
-    const savedMessage = await addMessage({
-      name,
-      email,
-      subject: subject || 'No Subject',
-      message
-    })
-    console.log('✅ New contact submission saved:', savedMessage.id)
-
-    // Send email notification (don't fail the request if email fails)
+    // 2. Email sending happens AFTER (try/catch so it doesn't fail the request)
     try {
       await sendEmailNotification({ name, email, subject: subject || 'No Subject', message })
     } catch (emailError) {
       console.error('Email notification failed but message was saved:', emailError)
     }
 
-    // Example: Send to Telegram (if BOT_TOKEN and CHAT_ID are set)
-    const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN
-    const telegramChatId = process.env.TELEGRAM_CHAT_ID
+    // 3. Telegram notification happens AFTER (try/catch so it doesn't fail the request)
+    try {
+      const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN
+      const telegramChatId = process.env.TELEGRAM_CHAT_ID
 
-    if (telegramBotToken && telegramChatId) {
-      const telegramMessage = `
+      if (telegramBotToken && telegramChatId) {
+        const telegramMessage = `
 🆕 New Contact Form Submission
 
 👤 Name: ${name}
 📧 Email: ${email}
 📋 Subject: ${subject || 'No subject'}
 💬 Message: ${message}
-      `.trim()
+        `.trim()
 
-      await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: telegramChatId,
-          text: telegramMessage,
-          parse_mode: 'HTML'
+        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: telegramChatId,
+            text: telegramMessage,
+            parse_mode: 'HTML'
+          })
         })
-      })
+      }
+    } catch (telegramError) {
+      console.error('Telegram notification failed but message was saved:', telegramError)
     }
 
     return NextResponse.json({ 
@@ -121,9 +124,9 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: any) {
-    console.error('❌ Contact form error:', error.message)
+    console.error("CONTACT API ERROR:", error);
     return NextResponse.json(
-      { error: 'Failed to save message: ' + error.message },
+      { error: error.message || 'Unknown request failure' },
       { status: 500 }
     )
   }
