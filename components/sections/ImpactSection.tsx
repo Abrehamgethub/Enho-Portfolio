@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -76,9 +75,9 @@ export default function ImpactSection() {
         {/* Stats Row */}
         <FadeInUp delay={0.2}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-10 md:mb-12">
-            {impactStats.map((stat, index) => (
+            {impactStats.map((stat) => (
               <motion.div
-                key={index}
+                key={stat.label}
                 whileHover={{ scale: 1.05, y: -5 }}
                 className="bg-white rounded-2xl p-6 text-center shadow-lg shadow-gray-200/50 border border-gray-100"
               >
@@ -94,8 +93,8 @@ export default function ImpactSection() {
 
         {/* Impact Stories Grid */}
         <StaggerContainer className="grid md:grid-cols-2 gap-6 mb-10 md:mb-12">
-          {impactStories.map((story, index) => (
-            <StaggerItem key={index}>
+          {impactStories.map((story) => (
+            <StaggerItem key={story.title}>
               <motion.div
                 whileHover={{ y: -8 }}
                 className="group relative bg-white rounded-2xl p-8 shadow-lg shadow-gray-200/50 border border-gray-100 overflow-hidden h-full"
@@ -134,9 +133,9 @@ export default function ImpactSection() {
               Trusted by Leading Organizations
             </h3>
             <div className="flex flex-wrap justify-center gap-2 md:gap-3">
-              {["EFDRE Custom Commission", "Yeti Pads", "YWCA Ethiopia", "Ethiopian Cancer Society", "Hope Oncology", "Ummi Orphans Charity"].map((partner, index) => (
+              {["EFDRE Custom Commission", "Yeti Pads", "YWCA Ethiopia", "Ethiopian Cancer Society", "Hope Oncology", "Ummi Orphans Charity"].map((partner) => (
                 <motion.span
-                  key={index}
+                  key={partner}
                   whileHover={{ scale: 1.05 }}
                   className="px-3 md:px-4 py-2 bg-white text-gray-700 rounded-full text-sm font-medium hover:bg-primary-50 hover:text-primary-600 transition-colors cursor-default shadow-sm"
                 >

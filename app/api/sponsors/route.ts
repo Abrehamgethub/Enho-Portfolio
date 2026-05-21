@@ -1,72 +1,86 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { collection, getDocs, addDoc, query, where } from 'firebase/firestore'
+import { firebaseAdminDb, isAdminEnabled } from '@/lib/firebase-admin'
 import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
 
-// GET all sponsors
+// GET all sponsors (admin or public)
 export async function GET(request: NextRequest) {
+  if (!isAdminEnabled) {
+    return NextResponse.json({ sponsors: [], source: 'none' })
+  }
+
   try {
-    const { searchParams } = new URL(request.url)
-    const programType = searchParams.get('type')
-    const featured = searchParams.get('featured')
+    const searchParams = request.nextUrl.searchParams
+    const type = searchParams.get('type')
     
-    let constraints: any[] = []
-    if (programType) constraints.push(where('programType', '==', programType))
-    if (featured === 'true') constraints.push(where('featured', '==', true))
+    // Create base query
+    let sponsorsRef: FirebaseFirestore.Query = firebaseAdminDb.collection('sponsors')
     
-    const q = query(collection(db, 'sponsors'), ...constraints)
-    const snapshot = await getDocs(q)
+    // Add type filter if provided
+    if (type) {
+      sponsorsRef = sponsorsRef.where('type', '==', type)
+    }
     
-    const sponsors = snapshot.docs.map(doc => ({
-      _id: doc.id,
-      id: doc.id,
-      ...doc.data()
-    })).sort((a: any, b: any) => {
-      if (a.order !== b.order && a.order !== undefined && b.order !== undefined) {
-         return a.order - b.order
-      }
-      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime()
+    const snap = await sponsorsRef.get()
+    
+    const sponsors = snap.docs.map((doc: any) => {
+      const data = doc.data()
+      delete data.id
+      delete data._id
+      return { ...data, id: doc.id }
     })
     
-    return NextResponse.json({ sponsors, source: 'firebase' })
+    // Sort logic (can be moved to Firestore order-by if indexed)
+    const orderMap: Record<string, number> = {
+      'Gold': 1,
+      'Silver': 2,
+      'Bronze': 3,
+      'Partner': 4
+    }
+    
+    sponsors.sort((a, b) => {
+      const typeA = orderMap[a.type as string] || 99
+      const typeB = orderMap[b.type as string] || 99
+      return typeA - typeB
+    })
+    
+    return NextResponse.json({ sponsors, source: 'firebase' }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    })
   } catch (error: any) {
     console.error('❌ Sponsors GET failed:', error.message)
-    return NextResponse.json(
-      { error: 'Database connection failed: ' + error.message, sponsors: [] },
-      { status: 503 }
-    )
+    return NextResponse.json({ error: 'Service unavailable: ' + error.message }, { status: 503 })
   }
 }
 
-// POST - add a new sponsor (admin only)
+// POST new sponsor (admin only)
 export async function POST(request: NextRequest) {
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
     const body = await request.json()
+    const { id, ...sponsorData } = body
     
-    const docRef = await addDoc(collection(db, 'sponsors'), {
-      name: body.name,
-      nameAmharic: body.nameAmharic,
-      logo: body.logo,
-      description: body.description,
-      website: body.website,
-      programType: body.programType || 'regular',
-      programName: body.programName,
-      programDate: body.programDate,
-      episodeUrl: body.episodeUrl,
-      photos: body.photos || [],
-      featured: body.featured || false,
-      order: body.order || 0,
+    if (!id) {
+      return NextResponse.json({ error: 'Validation error: ID is required' }, { status: 400 })
+    }
+
+    await firebaseAdminDb.collection('sponsors').doc(id).set({
+      ...sponsorData,
       createdAt: new Date().toISOString()
     })
     
-    return NextResponse.json({ success: true, sponsor: { _id: docRef.id, id: docRef.id, ...body } })
+    return NextResponse.json({ success: true, sponsor: { id, ...sponsorData } })
   } catch (error: any) {
-    console.error('❌ Sponsor POST failed:', error.message)
-    return NextResponse.json({ error: 'Failed to add sponsor: ' + error.message }, { status: 503 })
+    console.error('❌ Sponsors POST failed:', error.message)
+    return NextResponse.json({ error: 'Server error: ' + error.message }, { status: 500 })
   }
 }

@@ -12,10 +12,10 @@ import {
   ChevronRight,
   ArrowRight
 } from 'lucide-react'
-import { initialTrainings } from '@/lib/trainings-data'
+
 
 interface Training {
-  _id: string
+  id: string
   title: string
   description: string
   category: string
@@ -30,8 +30,9 @@ interface Training {
 }
 
 export default function TrainingsSection() {
-  const [trainings, setTrainings] = useState<Training[]>(initialTrainings)
-  const [loading, setLoading] = useState(false)
+  const [trainings, setTrainings] = useState<Training[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   useEffect(() => {
     async function fetchTrainings() {
@@ -48,6 +49,7 @@ export default function TrainingsSection() {
         console.error('Failed to fetch trainings:', error)
       } finally {
         setLoading(false)
+        setHasLoaded(true)
       }
     }
     fetchTrainings()
@@ -76,7 +78,7 @@ export default function TrainingsSection() {
           </p>
         </FadeInUp>
 
-        {loading ? (
+        {!hasLoaded ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gray-200 animate-pulse"></div>
             <p className="text-gray-500">Loading training programs...</p>
@@ -87,7 +89,7 @@ export default function TrainingsSection() {
             {featuredTrainings.length > 0 && (
               <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 {featuredTrainings.map((training, index) => (
-                  <StaggerItem key={training._id}>
+                  <StaggerItem key={training.id}>
                     <motion.div
                       whileHover={{ y: -8 }}
                       className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 overflow-hidden h-full"
@@ -163,7 +165,7 @@ export default function TrainingsSection() {
                 <div className="space-y-4">
                   {otherTrainings.map((training, index) => (
                     <motion.div
-                      key={training._id}
+                      key={training.id}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.1 }}

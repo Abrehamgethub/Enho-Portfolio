@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -125,9 +124,9 @@ export default function PodcastSection() {
               
               {/* Mobile Stats - Only show on smaller screens */}
               <div className="grid grid-cols-2 gap-4 lg:hidden">
-                {platformsToDisplay.map((platform, index) => (
+                {platformsToDisplay.map((platform) => (
                   <motion.a
-                    key={index}
+                    key={platform.name}
                     href={platform.href}
                     target="_blank"
                     whileHover={{ scale: 1.05, y: -5 }}

@@ -36,8 +36,12 @@ export default function UpdatesPage() {
   async function fetchUpdates() {
     try {
       const response = await fetch('/api/updates')
-      const data = await response.json()
-      setUpdates(data.updates || [])
+      if (response.ok) {
+        const data = await response.json()
+        setUpdates(data.updates || [])
+      } else {
+        console.error('Failed to fetch updates:', response.statusText)
+      }
     } catch (error) {
       console.error('Failed to fetch updates:', error)
     } finally {

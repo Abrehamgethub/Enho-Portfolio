@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { firebaseAdminDb, isAdminEnabled } from '@/lib/firebase-admin'
 import { requireAuth } from '@/lib/auth-middleware'
 
 // DELETE a guest (admin only)
@@ -11,12 +10,20 @@ export async function DELETE(
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
-    await deleteDoc(doc(db, 'guests', (await params).id))
+    const { id } = await params
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'Validation error: Valid ID is required' }, { status: 400 })
+    }
+    await firebaseAdminDb.collection('guests').doc(id).delete()
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error deleting guest:', error)
-    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Error deleting guest:', error.message)
+    return NextResponse.json({ error: 'Server error: Failed to delete: ' + error.message }, { status: 500 })
   }
 }
 
@@ -28,12 +35,20 @@ export async function PATCH(
   const authError = requireAuth(request)
   if (authError) return authError
 
-  try {
-    const body = await request.json()
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
 
+  try {
+    const { id } = await params
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'Validation error: Valid ID is required' }, { status: 400 })
+    }
+    const body = await request.json()
+    
     if ('episodeUrl' in body && !String(body.episodeUrl || '').trim()) {
       return NextResponse.json(
-        { error: 'Episode URL is required' },
+        { error: 'Validation error: Episode URL is required' },
         { status: 400 }
       )
     }
@@ -42,11 +57,11 @@ export async function PATCH(
       body.photo = ''
     }
     
-    await updateDoc(doc(db, 'guests', (await params).id), body)
+    await firebaseAdminDb.collection('guests').doc(id).update(body)
     
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error updating guest:', error)
-    return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Error updating guest:', error.message)
+    return NextResponse.json({ error: 'Server error: Failed to update: ' + error.message }, { status: 500 })
   }
 }

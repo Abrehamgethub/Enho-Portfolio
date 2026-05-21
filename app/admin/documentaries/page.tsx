@@ -20,7 +20,7 @@ import {
 } from 'lucide-react'
 
 interface Documentary {
-  _id?: string
+  id?: string
   title: string
   description: string
   language: string
@@ -72,7 +72,7 @@ export default function DocumentariesPage() {
 
     try {
       setSaving(true)
-      const method = documentary._id ? 'PUT' : 'POST'
+      const method = documentary.id ? 'PUT' : 'POST'
       const response = await fetch('/api/documentaries', {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -83,7 +83,7 @@ export default function DocumentariesPage() {
       clearTimeout(timeoutId)
 
       if (response.ok) {
-        setMessage({ type: 'success', text: `Documentary ${documentary._id ? 'updated' : 'created'} successfully!` })
+        setMessage({ type: 'success', text: `Documentary ${documentary.id ? 'updated' : 'created'} successfully!` })
         setShowForm(false)
         setEditing(null)
         fetchDocumentaries()
@@ -210,7 +210,7 @@ export default function DocumentariesPage() {
           <div className="space-y-4">
             {documentaries.map((doc, index) => (
               <motion.div
-                key={doc._id}
+                key={doc.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -283,7 +283,7 @@ export default function DocumentariesPage() {
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(doc._id!)}
+                      onClick={() => handleDelete(doc.id!)}
                       className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -316,7 +316,15 @@ function DocumentaryForm({
     e.preventDefault()
     setSaving(true)
     try {
-      await onSave(formData)
+      let finalData = { ...formData }
+      if (!finalData.thumbnailUrl && finalData.videoUrl) {
+        // Extract YouTube ID
+        const match = finalData.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)
+        if (match && match[1]) {
+          finalData.thumbnailUrl = `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`
+        }
+      }
+      await onSave(finalData)
     } finally {
       setSaving(false)
     }
@@ -330,7 +338,7 @@ function DocumentaryForm({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">
-          {documentary._id ? 'Edit Documentary' : 'New Documentary'}
+          {documentary.id ? 'Edit Documentary' : 'New Documentary'}
         </h2>
         <button
           onClick={onCancel}
@@ -431,8 +439,7 @@ function DocumentaryForm({
             value={formData.thumbnailUrl}
             onChange={(e) => handleChange('thumbnailUrl', e.target.value)}
             className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500"
-            placeholder="https://..."
-            required
+            placeholder="Auto-generated if left empty"
           />
         </div>
 

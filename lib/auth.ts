@@ -5,10 +5,14 @@ import { createHmac, randomBytes } from 'crypto'
 
 function getAuthSecret(): string {
   const secret = process.env.AUTH_SECRET
-  if (!secret || secret === 'eneho-admin-secret-2024') {
-    console.warn('⚠️ AUTH_SECRET is not set or using default. Set a strong secret in your environment variables.')
+  if (!secret) {
+    console.warn('⚠️ AUTH_SECRET is not set. Set a strong secret in your environment variables.')
+    if (process.env.NODE_ENV === 'production') {
+      throw new Error('AUTH_SECRET is critically missing. Cannot perform auth operations in production.')
+    }
+    return 'fallback-change-me' // Only reachable in non-production
   }
-  return secret || 'fallback-change-me'
+  return secret
 }
 
 function getAdminCredentials() {

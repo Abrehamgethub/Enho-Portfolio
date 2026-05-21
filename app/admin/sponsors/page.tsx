@@ -8,8 +8,8 @@ import {
 } from 'lucide-react'
 
 interface Sponsor {
-  _id: string
-  id?: string // Slug for identifier
+  id: string
+  slug?: string // Slug for identifier
   name: string
   nameAmharic?: string
   logo: string
@@ -40,7 +40,7 @@ export default function SponsorsPage() {
   const [filterType, setFilterType] = useState('all')
   
   const [formData, setFormData] = useState({
-    id: '',
+    slug: '',
     name: '',
     nameAmharic: '',
     logo: '',
@@ -59,11 +59,16 @@ export default function SponsorsPage() {
   }, [])
 
   async function fetchSponsors() {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      const response = await fetch('/api/sponsors')
+      const response = await fetch('/api/sponsors', { signal: controller.signal })
       const data = await response.json()
+      clearTimeout(timeoutId)
       setSponsors(data.sponsors || [])
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId)
       console.error('Failed to fetch sponsors:', error)
     } finally {
       setLoading(false)
@@ -73,21 +78,34 @@ export default function SponsorsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      const url = editingSponsor ? `/api/sponsors/${editingSponsor._id}` : '/api/sponsors'
+      const url = editingSponsor ? `/api/sponsors/${editingSponsor.id}` : '/api/sponsors'
       const method = editingSponsor ? 'PATCH' : 'POST'
       
-      const dataToSend = {
+      let dataToSend = {
         ...formData,
         photos: formData.photos.filter(p => p.trim() !== '')
+      }
+      
+      if (!dataToSend.logo && dataToSend.episodeUrl) {
+        const match = dataToSend.episodeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([^&?]+)/)
+        if (match && match[1]) {
+          dataToSend.logo = `https://img.youtube.com/vi/${match[1]}/maxresdefault.jpg`
+        }
       }
       
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dataToSend)
+        body: JSON.stringify(dataToSend),
+        signal: controller.signal
       })
       
+      clearTimeout(timeoutId)
+
       if (response.ok) {
         setMessage({ type: 'success', text: editingSponsor ? 'Sponsor updated!' : 'Sponsor added!' })
         resetForm()
@@ -95,8 +113,13 @@ export default function SponsorsPage() {
       } else {
         setMessage({ type: 'error', text: 'Failed to save sponsor' })
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Error saving sponsor' })
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      const isTimeout = error.name === 'AbortError'
+      setMessage({ 
+        type: 'error', 
+        text: isTimeout ? 'Request timed out after 10s. Please try again.' : 'Error saving sponsor' 
+      })
     }
     
     setTimeout(() => setMessage(null), 3000)
@@ -105,11 +128,21 @@ export default function SponsorsPage() {
   async function deleteSponsor(id: string) {
     if (!confirm('Are you sure you want to delete this sponsor?')) return
     
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      await fetch(`/api/sponsors/${id}`, { method: 'DELETE' })
-      setMessage({ type: 'success', text: 'Sponsor deleted' })
-      fetchSponsors()
-    } catch (error) {
+      const response = await fetch(`/api/sponsors/${id}`, { 
+        method: 'DELETE',
+        signal: controller.signal 
+      })
+      clearTimeout(timeoutId)
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Sponsor deleted' })
+        fetchSponsors()
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
       setMessage({ type: 'error', text: 'Failed to delete' })
     }
     
@@ -117,14 +150,22 @@ export default function SponsorsPage() {
   }
 
   async function toggleFeatured(sponsor: Sponsor) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      await fetch(`/api/sponsors/${sponsor._id}`, {
+      const response = await fetch(`/api/sponsors/${sponsor.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ featured: !sponsor.featured })
+        body: JSON.stringify({ featured: !sponsor.featured }),
+        signal: controller.signal
       })
-      fetchSponsors()
-    } catch (error) {
+      clearTimeout(timeoutId)
+      if (response.ok) {
+        fetchSponsors()
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
       console.error('Failed to toggle featured:', error)
     }
   }
@@ -132,7 +173,7 @@ export default function SponsorsPage() {
   function editSponsor(sponsor: Sponsor) {
     setEditingSponsor(sponsor)
     setFormData({
-      id: sponsor.id || '',
+      slug: sponsor.id || '',
       name: sponsor.name,
       nameAmharic: sponsor.nameAmharic || '',
       logo: sponsor.logo,
@@ -150,7 +191,7 @@ export default function SponsorsPage() {
 
   function resetForm() {
     setFormData({
-      id: '',
+      slug: '',
       name: '',
       nameAmharic: '',
       logo: '',
@@ -272,8 +313,8 @@ export default function SponsorsPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">ID / Slug (e.g., sponsor-name)</label>
                 <input
                   type="text"
-                  value={formData.id}
-                  onChange={(e) => setFormData({ ...formData, id: e.target.value })}
+                  value={formData.slug}
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                   className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
                   placeholder="Lowercase, no spaces"
                 />
@@ -334,8 +375,7 @@ export default function SponsorsPage() {
                     value={formData.logo}
                     onChange={(e) => setFormData({ ...formData, logo: e.target.value })}
                     className="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-red-500"
-                    placeholder="https://example.com/logo.png"
-                    required
+                    placeholder="Auto-generated from Episode URL if empty"
                   />
                 </div>
                 <div>
@@ -392,7 +432,7 @@ export default function SponsorsPage() {
                   Program Photos (Gallery)
                 </label>
                 {formData.photos.map((photo, index) => (
-                  <div key={index} className="flex gap-2 mb-2">
+                  <div key={`${photo}-${index}`} className="flex gap-2 mb-2">
                     <input
                       type="url"
                       value={photo}
@@ -471,7 +511,7 @@ export default function SponsorsPage() {
             const programType = PROGRAM_TYPES.find(t => t.id === sponsor.programType)
             return (
               <motion.div
-                key={sponsor._id}
+                key={sponsor.id}
                 layout
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -542,7 +582,7 @@ export default function SponsorsPage() {
                       </a>
                     )}
                     <button
-                      onClick={() => deleteSponsor(sponsor._id)}
+                      onClick={() => deleteSponsor(sponsor.id)}
                       className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 ml-auto"
                     >
                       <Trash2 className="w-4 h-4" />

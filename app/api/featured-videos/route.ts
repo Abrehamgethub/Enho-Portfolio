@@ -1,29 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { collection, getDocs, addDoc, query, where } from 'firebase/firestore'
+import { firebaseAdminDb, isAdminEnabled } from '@/lib/firebase-admin'
 import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
 
 // GET featured videos
 export async function GET(request: NextRequest) {
+  if (!isAdminEnabled) {
+    return NextResponse.json({ videos: [], source: 'none' })
+  }
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const activeOnly = searchParams.get('active') !== 'false'
     
-    let constraints: any[] = []
-    if (category) constraints.push(where('category', '==', category))
-    if (activeOnly) constraints.push(where('active', '==', true))
+    let videosRef: FirebaseFirestore.Query = firebaseAdminDb.collection('featured-videos')
     
-    const q = query(collection(db, 'featured-videos'), ...constraints)
-    const snapshot = await getDocs(q)
+    if (category) {
+      videosRef = videosRef.where('category', '==', category)
+    }
+    if (activeOnly) {
+      videosRef = videosRef.where('active', '==', true)
+    }
     
-    const videos = snapshot.docs.map(doc => ({
-      _id: doc.id,
-      id: doc.data().videoId, // ensure frontend mappings still work
-      ...doc.data()
-    })).sort((a: any, b: any) => {
+    const snapshot = await videosRef.get()
+    
+    const videos = snapshot.docs.map((doc: any) => {
+      const data = doc.data()
+      delete data.id
+      delete data._id
+      return { ...data, id: doc.id } // The frontend might have relied on `data.videoId || doc.id` previously but standardizing to `id: doc.id` here
+    }).sort((a: any, b: any) => {
       if (a.order !== b.order && a.order !== undefined && b.order !== undefined) {
          return a.order - b.order
       }
@@ -34,7 +41,7 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('❌ Featured videos GET failed:', error.message)
     return NextResponse.json(
-      { error: 'Database connection failed: ' + error.message, videos: [] },
+      { error: 'Service unavailable: ' + error.message },
       { status: 503 }
     )
   }
@@ -45,18 +52,25 @@ export async function POST(request: NextRequest) {
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
     const body = await request.json()
     
-    // Check if video already exists in Firestore memory
-    const existingQ = query(collection(db, 'featured-videos'), where('videoId', '==', body.videoId))
-    const existingSnap = await getDocs(existingQ)
-    
-    if (!existingSnap.empty) {
-      return NextResponse.json({ error: 'Video already added' }, { status: 400 })
+    if (!body.videoId || typeof body.videoId !== 'string') {
+      return NextResponse.json({ error: 'Validation error: Valid videoId is required' }, { status: 400 })
     }
     
-    const docRef = await addDoc(collection(db, 'featured-videos'), {
+    // Check if video already exists in Firestore memory
+    const existingSnap = await firebaseAdminDb.collection('featured-videos').where('videoId', '==', body.videoId).get()
+    
+    if (!existingSnap.empty) {
+      return NextResponse.json({ error: 'Validation error: Video already added' }, { status: 400 })
+    }
+    
+    const docRef = await firebaseAdminDb.collection('featured-videos').add({
       videoId: body.videoId,
       title: body.title,
       thumbnail: body.thumbnail,
@@ -66,9 +80,9 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString()
     })
     
-    return NextResponse.json({ success: true, video: { _id: docRef.id, id: body.videoId, ...body } })
+    return NextResponse.json({ success: true, video: { id: docRef.id, ...body } })
   } catch (error: any) {
     console.error('❌ Featured video POST failed:', error.message)
-    return NextResponse.json({ error: 'Failed to add video: ' + error.message }, { status: 503 })
+    return NextResponse.json({ error: 'Server error: Failed to add video: ' + error.message }, { status: 500 })
   }
 }

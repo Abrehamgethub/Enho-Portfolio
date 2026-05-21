@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -76,7 +75,7 @@ export default function AboutSection() {
               <div className="relative grid grid-cols-2 gap-4">
                 {values.map((value, index) => (
                   <motion.div
-                    key={index}
+                    key={value.title}
                     whileHover={{ y: -5, scale: 1.02 }}
                     className={`bg-white rounded-2xl p-6 shadow-xl border border-gray-100 ${
                       index === 1 || index === 2 ? 'mt-6' : ''

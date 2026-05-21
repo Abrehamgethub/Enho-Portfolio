@@ -17,7 +17,7 @@ import {
 } from 'lucide-react'
 
 interface SocialStat {
-  _id?: string
+  id?: string
   platform: string
   handle: string
   followers: string

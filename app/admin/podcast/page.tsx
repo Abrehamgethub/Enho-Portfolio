@@ -18,7 +18,6 @@ import {
 } from 'lucide-react'
 
 interface Video {
-  _id?: string
   id: string
   title: string
   thumbnail: string
@@ -150,7 +149,7 @@ export default function EpisodesPage() {
 
   async function toggleActive(video: Video) {
     try {
-      await fetch(`/api/featured-videos/${video._id}`, {
+      await fetch(`/api/featured-videos/${video.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !video.active })
@@ -163,7 +162,7 @@ export default function EpisodesPage() {
 
   async function updateCategory(video: Video, category: string) {
     try {
-      await fetch(`/api/featured-videos/${video._id}`, {
+      await fetch(`/api/featured-videos/${video.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category })
@@ -178,8 +177,8 @@ export default function EpisodesPage() {
     if (!confirm('Remove this video from featured?')) return
     
     try {
-      await fetch(`/api/featured-videos/${video._id}`, { method: 'DELETE' })
-      setFeaturedVideos(featuredVideos.filter(v => v._id !== video._id))
+      await fetch(`/api/featured-videos/${video.id}`, { method: 'DELETE' })
+      setFeaturedVideos(featuredVideos.filter(v => v.id !== video.id))
       setMessage({ type: 'success', text: 'Video removed' })
       setTimeout(() => setMessage(null), 3000)
     } catch (error) {
@@ -315,7 +314,7 @@ export default function EpisodesPage() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filteredFeatured.map((video) => (
               <div
-                key={video._id}
+                key={video.id}
                 className={`relative rounded-xl overflow-hidden border-2 transition-all ${
                   video.active ? 'border-green-500 shadow-lg' : 'border-gray-200 opacity-60'
                 }`}

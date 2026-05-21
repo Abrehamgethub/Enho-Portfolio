@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -13,27 +12,26 @@ import { Logo } from '@/components/Logo'
 import { FadeInUp, FadeInLeft, FadeInRight, ScaleIn, StaggerContainer, StaggerItem, HoverScale } from '@/components/Animations'
 import ContactForm from '@/components/ContactForm'
 import PodcastEpisodes from '@/components/PodcastEpisodes'
-
-import { doctors as staticDoctors } from '@/lib/doctors-data'
+import { fetchWithTimeout } from '@/lib/fetchWithTimeout'
 
 export default function TeamSection() {
-  const [doctors, setDoctors] = useState(staticDoctors)
-  const [loading, setLoading] = useState(false)
+  const [doctors, setDoctors] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   useEffect(() => {
     async function fetchTeam() {
       try {
-        const response = await fetch('/api/team')
+        const response = await fetchWithTimeout('/api/team')
         if (response.ok) {
           const data = await response.json()
-          if (data.team && data.team.length > 0) {
-            setDoctors(data.team)
-          }
+          setDoctors(data.team || [])
         }
       } catch (error) {
         console.error('Failed to fetch team:', error)
       } finally {
         setLoading(false)
+        setHasLoaded(true)
       }
     }
     fetchTeam()
@@ -57,6 +55,20 @@ export default function TeamSection() {
         </FadeInUp>
         
         {/* Team Cards */}
+        {!hasLoaded ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-8">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-3xl overflow-hidden shadow-xl shadow-gray-200/50 animate-pulse">
+                <div className="aspect-[4/5] md:aspect-[3/4] bg-gray-200" />
+                <div className="px-6 pb-6 text-center space-y-3 pt-4">
+                  <div className="h-6 bg-gray-200 rounded w-3/4 mx-auto" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2 mx-auto" />
+                  <div className="h-4 bg-gray-200 rounded w-2/3 mx-auto" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-8">
           {doctors.length === 0 ? (
             <div className="col-span-full text-center py-12">
@@ -66,7 +78,7 @@ export default function TeamSection() {
           ) : (
             doctors.map((doctor, index) => {
               const color = doctor.color || (index === 0 ? "from-violet-500 to-purple-600" : index === 1 ? "from-rose-500 to-pink-600" : "from-teal-500 to-cyan-600")
-              const doctorId = doctor._id || doctor.id
+              const doctorId = doctor.id
               
               return (
                 <motion.div
@@ -117,8 +129,8 @@ export default function TeamSection() {
                       
                       {/* Specialties */}
                       <div className="flex flex-wrap justify-center gap-2 mb-4 h-[60px] items-start content-start">
-                        {(doctor.specialties || []).slice(0, 3).map((specialty, i) => (
-                          <span key={i} className="text-xs bg-gray-50 text-gray-600 px-2.5 py-1 rounded-full border border-gray-100">
+                        {(doctor.specialties || []).slice(0, 3).map((specialty: string) => (
+                          <span key={specialty} className="text-xs bg-gray-50 text-gray-600 px-2.5 py-1 rounded-full border border-gray-100">
                             {specialty}
                           </span>
                         ))}
@@ -127,7 +139,7 @@ export default function TeamSection() {
                       {/* CTA */}
                       <div className="mt-auto pt-2">
                         <Link 
-                          href={`/team/${doctor.id || doctor._id}`}
+                          href={`/team/${doctor.id}`}
                           className={`inline-flex items-center justify-center gap-2 w-full py-3 rounded-xl font-medium text-white bg-gradient-to-r ${color} hover:shadow-lg transition-all duration-300`}
                         >
                           View Full Profile
@@ -141,6 +153,7 @@ export default function TeamSection() {
             })
           )}
         </div>
+        )}
         
         {/* Bottom CTA */}
         <FadeInUp delay={0.5} className="text-center mt-10 md:mt-12">
@@ -149,7 +162,7 @@ export default function TeamSection() {
               {doctors.slice(0, 3).map((doc, i) => {
                 const color = doc.color || (i === 0 ? "from-violet-500 to-purple-600" : i === 1 ? "from-rose-500 to-pink-600" : "from-teal-500 to-cyan-600")
                 return (
-                  <div key={i} className={`w-10 h-10 rounded-full bg-gradient-to-br ${color} border-2 border-white flex items-center justify-center shadow-md`}>
+                  <div key={doc.id} className={`w-10 h-10 rounded-full bg-gradient-to-br ${color} border-2 border-white flex items-center justify-center shadow-md`}>
                     {doc.image ? (
                       <img src={doc.image} alt="" className="w-full h-full rounded-full object-cover" />
                     ) : (

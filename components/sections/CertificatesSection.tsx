@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -49,9 +48,9 @@ export default function CertificatesSection() {
                 
                 {/* Right - Recognition badges */}
                 <div className="grid grid-cols-2 gap-3 md:gap-4">
-                  {recognitions.map((item, index) => (
+                  {recognitions.map((item) => (
                     <motion.div
-                      key={index}
+                      key={item.org}
                       whileHover={{ scale: 1.05 }}
                       className="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 hover:bg-white/20 transition-colors"
                     >

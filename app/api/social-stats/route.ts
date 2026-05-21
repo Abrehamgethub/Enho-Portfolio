@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore'
+import { firebaseAdminDb, isAdminEnabled } from '@/lib/firebase-admin'
 import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
@@ -14,11 +13,14 @@ const defaultStats = {
 
 // GET social stats
 export async function GET() {
+  if (!isAdminEnabled) {
+    return NextResponse.json({ stats: defaultStats, source: 'default' })
+  }
   try {
-    const docRef = doc(db, 'settings', 'social-stats')
-    const docSnap = await getDoc(docRef)
+    const docRef = firebaseAdminDb.collection('settings').doc('social-stats')
+    const docSnap = await docRef.get()
     
-    if (docSnap.exists()) {
+    if (docSnap.exists) {
       return NextResponse.json({ stats: docSnap.data(), source: 'firebase' })
     } else {
       return NextResponse.json({ stats: defaultStats, source: 'default' })
@@ -26,7 +28,7 @@ export async function GET() {
   } catch (error: any) {
     console.error('❌ Social stats GET failed:', error.message)
     return NextResponse.json(
-      { stats: defaultStats, error: error.message },
+      { stats: defaultStats, error: 'Service unavailable: ' + error.message },
       { status: 503 }
     )
   }
@@ -36,6 +38,10 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   const authError = requireAuth(request)
   if (authError) return authError
+
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
 
   try {
     const body = await request.json()
@@ -49,15 +55,15 @@ export async function PUT(request: NextRequest) {
       }
     })
     
-    const docRef = doc(db, 'settings', 'social-stats')
-    await setDoc(docRef, updateData, { merge: true })
+    const docRef = firebaseAdminDb.collection('settings').doc('social-stats')
+    await docRef.set(updateData, { merge: true })
     
     return NextResponse.json({ success: true, stats: updateData })
   } catch (error: any) {
     console.error('❌ Social stats PUT failed:', error.message)
     return NextResponse.json(
-      { error: 'Failed to update stats: ' + error.message },
-      { status: 503 }
+      { error: 'Server error: Failed to update stats: ' + error.message },
+      { status: 500 }
     )
   }
 }

@@ -131,8 +131,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                 transition={{ delay: 0.4 }}
                 className="flex flex-wrap justify-center md:justify-start gap-2"
               >
-                {doctor.specialties.slice(0, 4).map((specialty, i) => (
-                  <span key={i} className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                {doctor.specialties.slice(0, 4).map((specialty) => (
+                  <span key={specialty} className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium">
                     {specialty}
                   </span>
                 ))}
@@ -246,8 +246,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                   Professional Experience
                 </h2>
                 <div className="space-y-6">
-                  {doctor.experience.map((exp, index) => (
-                    <div key={index} className={`relative pl-6 border-l-2`} style={{ borderColor: 'rgb(196 181 253)' }}>
+                  {doctor.experience.map((exp) => (
+                    <div key={`${exp.title}-${exp.organization}`} className={`relative pl-6 border-l-2`} style={{ borderColor: 'rgb(196 181 253)' }}>
                       <div className={`absolute -left-2 top-0 w-4 h-4 rounded-full bg-gradient-to-br ${doctorColor}`}></div>
                       <div className="mb-1">
                         <h3 className="font-bold text-lg text-gray-900">{exp.title}</h3>
@@ -258,8 +258,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                       </p>
                       {exp.responsibilities && (
                         <ul className="space-y-1">
-                          {exp.responsibilities.map((resp, i) => (
-                            <li key={i} className="text-gray-600 text-sm flex items-start gap-2">
+                          {exp.responsibilities.map((resp) => (
+                            <li key={resp} className="text-gray-600 text-sm flex items-start gap-2">
                               <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                               {resp}
                             </li>
@@ -285,8 +285,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                   Education
                 </h2>
                 <div className="space-y-4">
-                  {doctor.education.map((edu, index) => (
-                    <div key={index} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
+                  {doctor.education.map((edu) => (
+                    <div key={`${edu.degree}-${edu.institution}`} className="flex gap-4 p-4 bg-gray-50 rounded-xl border border-gray-100">
                       <div className="w-12 h-12 rounded-xl bg-white flex items-center justify-center flex-shrink-0 shadow-sm border border-gray-100">
                         <GraduationCap className="w-6 h-6 text-gray-600" />
                       </div>
@@ -316,8 +316,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                     Volunteer & Community Work
                   </h2>
                   <div className="space-y-4">
-                    {doctor.volunteerWork.map((work, index) => (
-                      <div key={index} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
+                    {doctor.volunteerWork.map((work) => (
+                      <div key={`${work.role}-${work.organization}`} className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                         <h3 className="font-bold text-gray-900">{work.role}</h3>
                         <p className="text-gray-600 font-medium">{work.organization}</p>
                         {work.period && <p className="text-gray-500 text-sm">{work.period}</p>}
@@ -345,8 +345,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                   Skills & Expertise
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {doctor.skills.map((skill, i) => (
-                    <span key={i} className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium">
+                  {doctor.skills.map((skill) => (
+                    <span key={skill} className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm font-medium">
                       {skill}
                     </span>
                   ))}
@@ -366,8 +366,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                     Certifications
                   </h3>
                   <ul className="space-y-3">
-                    {doctor.certifications.map((cert, i) => (
-                      <li key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
+                    {doctor.certifications.map((cert) => (
+                      <li key={cert.name} className="flex items-start gap-3 p-3 bg-gray-50 rounded-xl">
                         <Award className="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-gray-700 font-medium text-sm">{cert.name}</p>
@@ -394,8 +394,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                     Additional Training
                   </h3>
                   <ul className="space-y-2">
-                    {doctor.trainings.map((training, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
+                    {doctor.trainings.map((training) => (
+                      <li key={training.name} className="flex items-start gap-2 text-sm">
                         <ChevronRight className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
                         <span className="text-gray-600">{training.name}</span>
                       </li>
@@ -416,8 +416,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                   Languages
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {doctor.languages.map((lang, i) => (
-                    <span key={i} className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm">
+                  {doctor.languages.map((lang) => (
+                    <span key={lang} className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded-full text-sm">
                       {lang}
                     </span>
                   ))}
@@ -437,8 +437,8 @@ export default function DoctorProfile({ doctor }: DoctorProfileProps) {
                     Professional Memberships
                   </h3>
                   <div className="space-y-3">
-                    {doctor.memberships.map((membership, i) => (
-                      <div key={i} className="p-3 bg-gray-50 rounded-xl">
+                    {doctor.memberships.map((membership) => (
+                      <div key={membership.organization} className="p-3 bg-gray-50 rounded-xl">
                         <p className="font-medium text-gray-800 text-sm">{membership.organization}</p>
                         {membership.since && (
                           <p className="text-xs text-gray-500">Since {membership.since}</p>

@@ -2,16 +2,20 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getDoctorById, getAllDoctorIds } from '@/lib/doctors-data'
 import DoctorProfile from './DoctorProfile'
-import { db } from '@/lib/firebase'
+import { db, isFirestoreEnabled } from '@/lib/firebase'
 import { collection, getDocs, query, where } from 'firebase/firestore'
 
-// Required for static export with dynamic routes
+export const dynamic = 'force-dynamic'
+
+// Removed generateStaticParams to prevent build-time Firestore calls on Vercel.
+// The page will now be rendered dynamically on demand.
+/*
 export async function generateStaticParams() {
-  // During build, we use the static IDs
   return getAllDoctorIds().map((id) => ({
     id: id,
   }))
 }
+*/
 
 interface PageProps {
   params: Promise<{ id: string }>
@@ -27,14 +31,16 @@ export default async function DoctorPage({ params }: PageProps) {
   
   // 2. Get dynamic data from Firebase (overrides / new members)
   let member = null
-  try {
-    const q = query(collection(db, 'team'), where('id', '==', id))
-    const snap = await getDocs(q)
-    if (!snap.empty) {
-      member = snap.docs[0].data()
+  if (isFirestoreEnabled) {
+    try {
+      const q = query(collection(db, 'team'), where('id', '==', id))
+      const snap = await getDocs(q)
+      if (!snap.empty) {
+        member = snap.docs[0].data()
+      }
+    } catch (error) {
+      console.error('Error fetching team member in detail page:', error)
     }
-  } catch (error) {
-    console.error('Error fetching team member in detail page:', error)
   }
 
   // 3. Logic: If no static record AND no DB record, then 404

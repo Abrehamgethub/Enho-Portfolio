@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -13,25 +12,32 @@ import { Logo } from '@/components/Logo'
 import { FadeInUp, FadeInLeft, FadeInRight, ScaleIn, StaggerContainer, StaggerItem, HoverScale } from '@/components/Animations'
 import ContactForm from '@/components/ContactForm'
 import PodcastEpisodes from '@/components/PodcastEpisodes'
+import { fetchWithTimeout } from '@/lib/fetchWithTimeout'
+
+interface Update {
+  id: string
+  text: string
+  time: string
+  createdAt?: string
+}
 
 export default function LatestUpdates() {
-  const [updates, setUpdates] = useState([
-    { id: '1', text: '🎙️ New Episode: Understanding Diabetes Prevention', time: '2 hours ago' },
-    { id: '2', text: '💊 Health Tip: 5 ways to boost your immune system', time: '5 hours ago' },
-    { id: '3', text: '📢 Join us LIVE this Saturday for Q&A session!', time: '1 day ago' },
-  ])
+  const [updates, setUpdates] = useState<Update[]>([])
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   useEffect(() => {
     async function fetchUpdates() {
       try {
-        const response = await fetch('/api/updates')
+        const response = await fetchWithTimeout('/api/updates')
         const data = await response.json()
         
-        if (data.updates && data.updates.length > 0) {
+        if (data.updates) {
           setUpdates(data.updates)
         }
       } catch (error) {
-        // Silently fail - default updates will show
+        // Silently fail
+      } finally {
+        setHasLoaded(true)
       }
     }
     fetchUpdates()
@@ -51,8 +57,14 @@ export default function LatestUpdates() {
         </a>
       </div>
       
-      {/* Static Updates Display */}
-      {updates.length > 0 ? (
+      {/* Updates Display */}
+      {!hasLoaded ? (
+        <div className="space-y-3">
+          {[1, 2].map(i => (
+            <div key={i} className="bg-white/5 rounded-lg p-3 border border-white/10 animate-pulse h-16" />
+          ))}
+        </div>
+      ) : updates.length > 0 ? (
         <div className="space-y-3 max-h-32 overflow-y-auto">
           {updates.map((update) => (
             <div key={update.id} className="bg-white/5 rounded-lg p-3 border border-white/10">

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { FadeInUp, StaggerContainer, StaggerItem } from '@/components/Animations'
-import { initialDocumentaries } from '@/lib/documentaries-data'
+
 import { 
   Play, 
   Globe, 
@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 
 interface Documentary {
-  _id: string
+  id: string
   title: string
   description: string
   language: string
@@ -30,8 +30,9 @@ interface Documentary {
 }
 
 export default function DocumentariesSection() {
-  const [documentaries, setDocumentaries] = useState<Documentary[]>(initialDocumentaries)
-  const [loading, setLoading] = useState(false)
+  const [documentaries, setDocumentaries] = useState<Documentary[]>([])
+  const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   useEffect(() => {
     async function fetchDocumentaries() {
@@ -48,6 +49,7 @@ export default function DocumentariesSection() {
         console.error('Failed to fetch documentaries:', error)
       } finally {
         setLoading(false)
+        setHasLoaded(true)
       }
     }
     fetchDocumentaries()
@@ -73,7 +75,7 @@ export default function DocumentariesSection() {
           </p>
         </FadeInUp>
 
-        {loading ? (
+        {!hasLoaded ? (
           <div className="text-center py-12">
             <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-gray-200 animate-pulse"></div>
             <p className="text-gray-500">Loading documentaries...</p>
@@ -84,7 +86,7 @@ export default function DocumentariesSection() {
             {featuredDocumentaries.length > 0 && (
               <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                 {featuredDocumentaries.map((doc, index) => (
-                  <StaggerItem key={doc._id}>
+                  <StaggerItem key={doc.id}>
                     <motion.div
                       whileHover={{ y: -8 }}
                       className="bg-white rounded-2xl shadow-lg shadow-gray-200/50 border border-gray-100 overflow-hidden h-full group cursor-pointer"
@@ -161,7 +163,7 @@ export default function DocumentariesSection() {
                 <div className="grid md:grid-cols-2 gap-4">
                   {otherDocumentaries.map((doc, index) => (
                     <motion.div
-                      key={doc._id}
+                      key={doc.id}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}

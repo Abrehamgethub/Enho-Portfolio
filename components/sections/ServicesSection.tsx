@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -79,8 +78,8 @@ export default function ServicesSection() {
         
         {/* Services Grid */}
         <StaggerContainer className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service, index) => (
-            <StaggerItem key={index}>
+          {services.map((service) => (
+            <StaggerItem key={service.title}>
               <motion.div 
                 whileHover={{ y: -8 }}
                 className="group relative bg-white rounded-2xl p-6 md:p-8 shadow-lg shadow-gray-200/50 border border-gray-100 h-full overflow-hidden"

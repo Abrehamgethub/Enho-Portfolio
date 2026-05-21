@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -44,9 +43,9 @@ export function FeaturedVideoPlayer({ platforms }: { platforms?: Platform[] }) {
         {/* Social Stats Row */}
         {platforms && (
           <div className="grid grid-cols-4 gap-2 pt-3 border-t border-white/20">
-            {platforms.map((platform, index) => (
+            {platforms.map((platform) => (
               <a
-                key={index}
+                key={platform.name}
                 href={platform.href}
                 target="_blank"
                 rel="noopener noreferrer"

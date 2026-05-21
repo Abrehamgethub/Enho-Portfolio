@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { doc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { firebaseAdminDb, isAdminEnabled } from '@/lib/firebase-admin'
 import { requireAuth } from '@/lib/auth-middleware'
 
 // DELETE an update (admin only)
@@ -11,14 +10,21 @@ export async function DELETE(
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
     const { id } = await params
-    await deleteDoc(doc(db, 'updates', id))
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'Validation error: Valid ID is required' }, { status: 400 })
+    }
+    await firebaseAdminDb.collection('updates').doc(id).delete()
     
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error deleting update:', error)
-    return NextResponse.json({ error: 'Failed to delete update' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Error deleting update:', error.message)
+    return NextResponse.json({ error: 'Server error: Failed to delete update: ' + error.message }, { status: 500 })
   }
 }
 
@@ -30,15 +36,22 @@ export async function PATCH(
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
     const { id } = await params
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'Validation error: Valid ID is required' }, { status: 400 })
+    }
     const body = await request.json()
     
-    await updateDoc(doc(db, 'updates', id), { active: body.active })
+    await firebaseAdminDb.collection('updates').doc(id).update({ active: body.active })
     
     return NextResponse.json({ success: true })
-  } catch (error) {
-    console.error('Error updating update:', error)
-    return NextResponse.json({ error: 'Failed to update' }, { status: 500 })
+  } catch (error: any) {
+    console.error('Error updating update:', error.message)
+    return NextResponse.json({ error: 'Server error: Failed to update: ' + error.message }, { status: 500 })
   }
 }

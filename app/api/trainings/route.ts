@@ -1,35 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query, where } from 'firebase/firestore'
+import { firebaseAdminDb, isAdminEnabled } from '@/lib/firebase-admin'
 import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
 
 // GET all trainings
 export async function GET(request: NextRequest) {
+  if (!isAdminEnabled) {
+    return NextResponse.json({ trainings: [], source: 'none' })
+  }
   try {
     const { searchParams } = new URL(request.url)
     const featured = searchParams.get('featured')
     const category = searchParams.get('category')
     
-    let constraints: any[] = []
-    if (featured === 'true') constraints.push(where('featured', '==', true))
-    if (category) constraints.push(where('category', '==', category))
+    let trainingsRef: FirebaseFirestore.Query = firebaseAdminDb.collection('trainings')
+    
+    if (featured === 'true') {
+      trainingsRef = trainingsRef.where('featured', '==', true)
+    }
+    if (category) {
+      trainingsRef = trainingsRef.where('category', '==', category)
+    }
 
-    const q = query(collection(db, 'trainings'), ...constraints)
-    const snapshot = await getDocs(q)
+    const snapshot = await trainingsRef.get()
     
     // Sort in memory to avoid Firestore index requirements
-    const trainings = snapshot.docs.map(doc => ({
-      _id: doc.id,
-      ...doc.data()
-    })).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    const trainings = snapshot.docs.map((doc: any) => {
+      const data = doc.data()
+      delete data.id
+      delete data._id
+      return { ...data, id: doc.id }
+    }).sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
     return NextResponse.json({ trainings, source: 'firebase' })
   } catch (error: any) {
     console.error('❌ Trainings GET failed:', error.message)
     return NextResponse.json(
-      { error: 'Database connection failed: ' + error.message, trainings: [] },
+      { error: 'Service unavailable: ' + error.message },
       { status: 503 }
     )
   }
@@ -40,16 +48,20 @@ export async function POST(request: NextRequest) {
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
     const body = await request.json()
-    const docRef = await addDoc(collection(db, 'trainings'), body)
+    const docRef = await firebaseAdminDb.collection('trainings').add(body)
     
-    return NextResponse.json({ _id: docRef.id, ...body }, { status: 201 })
+    return NextResponse.json({ id: docRef.id, ...body }, { status: 201 })
   } catch (error: any) {
     console.error('❌ Training POST failed:', error.message)
     return NextResponse.json(
-      { error: 'Failed to create training: ' + error.message },
-      { status: 503 }
+      { error: 'Server error: Failed to create training: ' + error.message },
+      { status: 500 }
     )
   }
 }
@@ -59,22 +71,26 @@ export async function PUT(request: NextRequest) {
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
     const body = await request.json()
     const { id, _id, ...updateData } = body
     const trainingId = id || _id
     
     if (!trainingId) {
-      return NextResponse.json({ error: 'Training ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Validation error: Training ID is required' }, { status: 400 })
     }
     
-    await updateDoc(doc(db, 'trainings', trainingId), updateData)
-    return NextResponse.json({ _id: trainingId, ...updateData })
+    await firebaseAdminDb.collection('trainings').doc(trainingId).update(updateData)
+    return NextResponse.json({ id: trainingId, ...updateData })
   } catch (error: any) {
     console.error('❌ Training PUT failed:', error.message)
     return NextResponse.json(
-      { error: 'Failed to update training: ' + error.message },
-      { status: 503 }
+      { error: 'Server error: Failed to update training: ' + error.message },
+      { status: 500 }
     )
   }
 }
@@ -84,21 +100,25 @@ export async function DELETE(request: NextRequest) {
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const trainingId = searchParams.get('id') || searchParams.get('_id')
     
     if (!trainingId) {
-      return NextResponse.json({ error: 'Training ID is required' }, { status: 400 })
+      return NextResponse.json({ error: 'Validation error: Training ID is required' }, { status: 400 })
     }
     
-    await deleteDoc(doc(db, 'trainings', trainingId))
+    await firebaseAdminDb.collection('trainings').doc(trainingId).delete()
     return NextResponse.json({ message: 'Training deleted successfully' })
   } catch (error: any) {
     console.error('❌ Training DELETE failed:', error.message)
     return NextResponse.json(
-      { error: 'Failed to delete training: ' + error.message },
-      { status: 503 }
+      { error: 'Server error: Failed to delete training: ' + error.message },
+      { status: 500 }
     )
   }
 }

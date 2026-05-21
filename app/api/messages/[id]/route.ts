@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore'
+import { firebaseAdminDb, isAdminEnabled } from '@/lib/firebase-admin'
 import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
@@ -13,17 +12,25 @@ export async function GET(
   const authError = requireAuth(request)
   if (authError) return authError
 
-  try {
-    const docRef = doc(db, 'messages', (await params).id)
-    const docSnap = await getDoc(docRef)
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
 
-    if (!docSnap.exists()) {
+  try {
+    const { id } = await params
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'Validation error: Valid ID is required' }, { status: 400 })
+    }
+    
+    const docSnap = await firebaseAdminDb.collection('messages').doc(id).get()
+
+    if (!docSnap.exists) {
       return NextResponse.json({ error: 'Message not found' }, { status: 404 })
     }
 
     return NextResponse.json({ message: { id: docSnap.id, ...docSnap.data() } })
   } catch (error: any) {
-    return NextResponse.json({ error: 'Failed to fetch message: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Service unavailable: Failed to fetch message: ' + error.message }, { status: 503 })
   }
 }
 
@@ -35,9 +42,17 @@ export async function PATCH(
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
+    const { id } = await params
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'Validation error: Valid ID is required' }, { status: 400 })
+    }
     const body = await request.json()
-    const docRef = doc(db, 'messages', (await params).id)
+    const docRef = firebaseAdminDb.collection('messages').doc(id)
     
     let updateData: any = {}
 
@@ -47,12 +62,12 @@ export async function PATCH(
       updateData = body
     }
 
-    await updateDoc(docRef, updateData)
-    const updatedDoc = await getDoc(docRef)
+    await docRef.update(updateData)
+    const updatedDoc = await docRef.get()
     
     return NextResponse.json({ success: true, message: { id: updatedDoc.id, ...updatedDoc.data() } })
   } catch (error: any) {
-    return NextResponse.json({ error: 'Failed to update message: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Server error: Failed to update message: ' + error.message }, { status: 500 })
   }
 }
 
@@ -64,12 +79,20 @@ export async function DELETE(
   const authError = requireAuth(request)
   if (authError) return authError
 
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
-    const docRef = doc(db, 'messages', (await params).id)
-    await deleteDoc(docRef)
+    const { id } = await params
+    if (!id || typeof id !== 'string' || id.trim() === '') {
+      return NextResponse.json({ error: 'Validation error: Valid ID is required' }, { status: 400 })
+    }
+    
+    await firebaseAdminDb.collection('messages').doc(id).delete()
     
     return NextResponse.json({ success: true })
   } catch (error: any) {
-    return NextResponse.json({ error: 'Failed to delete message: ' + error.message }, { status: 500 })
+    return NextResponse.json({ error: 'Server error: Failed to delete message: ' + error.message }, { status: 500 })
   }
 }

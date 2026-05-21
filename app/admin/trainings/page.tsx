@@ -19,7 +19,7 @@ import {
 } from 'lucide-react'
 
 interface Training {
-  _id?: string
+  id?: string
   title: string
   description: string
   category: string
@@ -68,7 +68,7 @@ export default function TrainingsPage() {
     const timeoutId = setTimeout(() => controller.abort(), 10000)
 
     try {
-      const method = training._id ? 'PUT' : 'POST'
+      const method = training.id ? 'PUT' : 'POST'
       const response = await fetch('/api/trainings', {
         method,
         headers: { 'Content-Type': 'application/json' },
@@ -79,7 +79,7 @@ export default function TrainingsPage() {
       clearTimeout(timeoutId)
 
       if (response.ok) {
-        setMessage({ type: 'success', text: `Training ${training._id ? 'updated' : 'created'} successfully!` })
+        setMessage({ type: 'success', text: `Training ${training.id ? 'updated' : 'created'} successfully!` })
         setShowForm(false)
         setEditing(null)
         fetchTrainings()
@@ -203,7 +203,7 @@ export default function TrainingsPage() {
           <div className="space-y-4">
             {trainings.map((training, index) => (
               <motion.div
-                key={training._id}
+                key={training.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
@@ -252,7 +252,7 @@ export default function TrainingsPage() {
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => handleDelete(training._id!)}
+                      onClick={() => handleDelete(training.id!)}
                       className="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -299,7 +299,7 @@ function TrainingForm({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">
-          {training._id ? 'Edit Training' : 'New Training'}
+          {training.id ? 'Edit Training' : 'New Training'}
         </h2>
         <button
           onClick={onCancel}

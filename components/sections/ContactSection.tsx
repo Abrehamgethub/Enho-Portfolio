@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -52,9 +51,9 @@ export default function ContactSection() {
             {/* Contact Methods */}
             <FadeInLeft>
               <div className="space-y-4">
-                {contactMethods.map((method, index) => (
+                {contactMethods.map((method) => (
                   <motion.a
-                    key={index}
+                    key={method.label}
                     href={method.href}
                     target={method.href.startsWith('http') ? '_blank' : undefined}
                     whileHover={{ x: 5, scale: 1.02 }}
@@ -80,9 +79,9 @@ export default function ContactSection() {
                   Stay updated with our latest episodes, health tips, and community events.
                 </p>
                 <div className="flex gap-3">
-                  {socials.map((social, index) => (
+                  {socials.map((social) => (
                     <motion.a
-                      key={index}
+                      key={social.href}
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"

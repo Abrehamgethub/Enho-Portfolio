@@ -8,8 +8,7 @@ import {
 } from 'lucide-react'
 
 interface Guest {
-  _id: string
-  id?: string // Slug for identifier
+  id: string
   name: string
   nameAmharic?: string
   title: string
@@ -70,11 +69,16 @@ export default function GuestsPage() {
   }, [])
 
   async function fetchGuests() {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      const response = await fetch('/api/guests')
+      const response = await fetch('/api/guests', { signal: controller.signal })
       const data = await response.json()
+      clearTimeout(timeoutId)
       setGuests(data.guests || [])
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId)
       console.error('Failed to fetch guests:', error)
     } finally {
       setLoading(false)
@@ -84,16 +88,22 @@ export default function GuestsPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      const url = editingGuest ? `/api/guests/${editingGuest._id}` : '/api/guests'
+      const url = editingGuest ? `/api/guests/${editingGuest.id}` : '/api/guests'
       const method = editingGuest ? 'PATCH' : 'POST'
       
       const response = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(formData),
+        signal: controller.signal
       })
       
+      clearTimeout(timeoutId)
+
       if (response.ok) {
         setMessage({ type: 'success', text: editingGuest ? 'Guest updated!' : 'Guest added!' })
         resetForm()
@@ -101,8 +111,13 @@ export default function GuestsPage() {
       } else {
         setMessage({ type: 'error', text: 'Failed to save guest' })
       }
-    } catch (error) {
-      setMessage({ type: 'error', text: 'Error saving guest' })
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      const isTimeout = error.name === 'AbortError'
+      setMessage({ 
+        type: 'error', 
+        text: isTimeout ? 'Request timed out after 10s. Please try again.' : 'Error saving guest' 
+      })
     }
     
     setTimeout(() => setMessage(null), 3000)
@@ -111,11 +126,22 @@ export default function GuestsPage() {
   async function deleteGuest(id: string) {
     if (!confirm('Are you sure you want to delete this guest?')) return
     
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      await fetch(`/api/guests/${id}`, { method: 'DELETE' })
-      setMessage({ type: 'success', text: 'Guest deleted' })
-      fetchGuests()
-    } catch (error) {
+      const response = await fetch(`/api/guests/${id}`, { 
+        method: 'DELETE',
+        signal: controller.signal 
+      })
+      clearTimeout(timeoutId)
+      
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Guest deleted' })
+        fetchGuests()
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
       setMessage({ type: 'error', text: 'Failed to delete' })
     }
     
@@ -123,14 +149,22 @@ export default function GuestsPage() {
   }
 
   async function toggleFeatured(guest: Guest) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      await fetch(`/api/guests/${guest._id}`, {
+      const response = await fetch(`/api/guests/${guest.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ featured: !guest.featured })
+        body: JSON.stringify({ featured: !guest.featured }),
+        signal: controller.signal
       })
-      fetchGuests()
-    } catch (error) {
+      clearTimeout(timeoutId)
+      if (response.ok) {
+        fetchGuests()
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
       console.error('Failed to toggle featured:', error)
     }
   }
@@ -377,7 +411,7 @@ export default function GuestsPage() {
                 {formData.photos.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2">
                     {formData.photos.map((photo, index) => (
-                      <div key={index} className="relative group">
+                      <div key={`${photo}-${index}`} className="relative group">
                         <img src={photo} alt={`Gallery ${index + 1}`} className="w-16 h-16 object-cover rounded-lg" />
                         <button
                           type="button"
@@ -444,7 +478,7 @@ export default function GuestsPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {guests.map((guest) => (
             <motion.div
-              key={guest._id}
+              key={guest.id}
               layout
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -522,7 +556,7 @@ export default function GuestsPage() {
                     </a>
                   )}
                   <button
-                    onClick={() => deleteGuest(guest._id)}
+                    onClick={() => deleteGuest(guest.id)}
                     className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 ml-auto"
                   >
                     <Trash2 className="w-4 h-4" />

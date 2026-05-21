@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc, query } from 'firebase/firestore'
+import { firebaseAdminDb, isAdminEnabled } from '@/lib/firebase-admin'
 import { requireAuth } from '@/lib/auth-middleware'
 
 export const dynamic = 'force-dynamic'
@@ -23,20 +22,24 @@ function getTimeAgo(dateString: string): string {
 
 // GET all updates
 export async function GET() {
+  if (!isAdminEnabled) {
+    return NextResponse.json({ updates: [], source: 'none' })
+  }
   try {
-    const q = query(collection(db, 'updates'))
-    const snapshot = await getDocs(q)
+    const snapshot = await firebaseAdminDb.collection('updates').get()
     
-    let updates = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as any))
+    let updates = snapshot.docs.map((doc: any) => {
+      const data = doc.data()
+      delete data.id
+      delete data._id
+      return { ...data, id: doc.id }
+    })
     
     // Filter active and sort
-    updates = updates.filter(u => u.active !== false).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    updates = updates.filter((u: any) => u.active !== false).sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
     
     // Format for frontend
-    const formattedUpdates = updates.slice(0, 10).map(update => ({
+    const formattedUpdates = updates.slice(0, 10).map((update: any) => ({
       id: update.id,
       text: `${update.emoji || '📢'} ${update.text}`,
       time: getTimeAgo(update.createdAt),
@@ -47,7 +50,7 @@ export async function GET() {
   } catch (error: any) {
     console.error('❌ Updates GET failed:', error.message)
     return NextResponse.json(
-      { error: 'Database connection failed: ' + error.message, updates: [] },
+      { error: 'Service unavailable: ' + error.message },
       { status: 503 }
     )
   }
@@ -58,9 +61,13 @@ export async function POST(request: NextRequest) {
   const authError = requireAuth(request)
   if (authError) return authError
   
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
     const { text, emoji } = await request.json()
-    const docRef = await addDoc(collection(db, 'updates'), {
+    const docRef = await firebaseAdminDb.collection('updates').add({
       text,
       emoji: emoji || '📢',
       active: true,
@@ -71,8 +78,8 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('❌ Update POST failed:', error.message)
     return NextResponse.json(
-      { error: 'Failed to create update: ' + error.message },
-      { status: 503 }
+      { error: 'Server error: Failed to create update: ' + error.message },
+      { status: 500 }
     )
   }
 }

@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -13,29 +12,11 @@ import { Logo } from '@/components/Logo'
 import { FadeInUp, FadeInLeft, FadeInRight, ScaleIn, StaggerContainer, StaggerItem, HoverScale } from '@/components/Animations'
 import ContactForm from '@/components/ContactForm'
 import PodcastEpisodes from '@/components/PodcastEpisodes'
-// Helper function to extract YouTube video ID
-function getYouTubeVideoId(url: string | undefined): string | null {
-  if (!url) return null
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
-  const match = url.match(regExp)
-  if (match && match[2].length === 11) {
-    return match[2]
-  }
-  return null
-}
-
-// Get YouTube thumbnail - use hqdefault as it's always available
-function getYouTubeThumbnail(url: string | undefined): string | null {
-  const videoId = getYouTubeVideoId(url)
-  if (videoId) {
-    // Use hqdefault (480x360) as it's always available for all videos
-    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-  }
-  return null
-}
+import { getYouTubeVideoId, getYouTubeThumbnail } from '@/lib/youtube'
+import { fetchWithTimeout } from '@/lib/fetchWithTimeout'
 
 interface GuestData {
-  _id: string
+  id: string
   name: string
   nameAmharic?: string
   title?: string
@@ -49,27 +30,27 @@ interface GuestData {
 }
 
 
-import { initialGuests } from '@/lib/guests-data'
-
 export default function PreviousGuestsSection() {
-  const [guests, setGuests] = useState<GuestData[]>(initialGuests)
+  const [guests, setGuests] = useState<GuestData[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [expandedGuest, setExpandedGuest] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchGuests() {
       try {
-        const response = await fetch('/api/guests')
+        const response = await fetchWithTimeout('/api/guests')
         if (response.ok) {
           const data = await response.json()
-          if (data.guests && data.guests.length > 0) {
-            setGuests(data.guests)
-          }
+          setGuests(data.guests || [])
+        } else {
+          console.error('Failed to fetch guests:', response.statusText)
         }
       } catch (error) {
         console.error('Failed to fetch guests:', error)
       } finally {
         setLoading(false)
+        setHasLoaded(true)
       }
     }
     fetchGuests()
@@ -95,6 +76,20 @@ export default function PreviousGuestsSection() {
           </p>
         </FadeInUp>
 
+        {!hasLoaded ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-lg animate-pulse">
+                <div className="aspect-video bg-gray-200" />
+                <div className="p-4 space-y-3">
+                  <div className="h-5 bg-gray-200 rounded w-3/4" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2" />
+                  <div className="h-4 bg-gray-200 rounded w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {guests.length === 0 ? (
             <div className="col-span-full text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
@@ -110,7 +105,7 @@ export default function PreviousGuestsSection() {
               
               return (
                 <motion.div
-                  key={guest._id}
+                  key={guest.id}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -180,12 +175,12 @@ export default function PreviousGuestsSection() {
                   </div>
                   
                   <div className="mt-3">
-                    <div className={`text-gray-600 text-sm ${expandedGuest === guest._id ? '' : 'line-clamp-2'}`}>
+                    <div className={`text-gray-600 text-sm ${expandedGuest === guest.id ? '' : 'line-clamp-2'}`}>
                       {guest.description}
                     </div>
                     
                     {/* Expanded Content */}
-                    {expandedGuest === guest._id && (
+                    {expandedGuest === guest.id && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -199,7 +194,7 @@ export default function PreviousGuestsSection() {
                             <div className="grid grid-cols-3 gap-2">
                               {guest.photos.map((photo: string, i: number) => (
                                 <img 
-                                  key={i} 
+                                  key={`${photo}-${i}`} 
                                   src={photo} 
                                   alt={`${guest.name} - Photo ${i + 1}`}
                                   className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
@@ -227,11 +222,11 @@ export default function PreviousGuestsSection() {
                     
                     {((guest.description?.length ?? 0) > 100 || (guest.photos?.length ?? 0) > 0) && (
                       <button 
-                        onClick={() => toggleGuestDetails(guest._id)}
+                        onClick={() => toggleGuestDetails(guest.id)}
                         className="text-indigo-600 text-sm font-medium mt-2 hover:text-indigo-800 transition-colors flex items-center"
                       >
-                        {expandedGuest === guest._id ? 'Show Less' : 'View Details'}
-                        <ChevronRight className={`w-4 h-4 transition-transform ${expandedGuest === guest._id ? 'transform rotate-90' : ''}`} />
+                        {expandedGuest === guest.id ? 'Show Less' : 'View Details'}
+                        <ChevronRight className={`w-4 h-4 transition-transform ${expandedGuest === guest.id ? 'transform rotate-90' : ''}`} />
                       </button>
                     )}
                   </div>
@@ -241,6 +236,7 @@ export default function PreviousGuestsSection() {
             })
           )}
         </div>
+        )}
       </div>
     </section>
   )

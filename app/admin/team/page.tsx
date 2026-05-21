@@ -15,60 +15,6 @@ import {
   Image as ImageIcon
 } from 'lucide-react'
 
-const initialTeam = [
-  {
-    id: 'dr-melat',
-    name: 'Dr. Melat Mesfin',
-    credentials: 'MD, MPH',
-    role: 'Co-Founder & Co-host',
-    specialties: ['Public Health', 'AI in Medicine', 'Research', 'Reproductive Health'],
-    education: ['MD - Yekatit 12 Hospital Medical College', 'MPH - Addis Ababa University', 'BSc Public Health - University of Gondar'],
-    experience: 'EPHI COVID-19 Response, World Bank GBV Project, AMREF Research',
-    image: '/dr-melat.jpg',
-    socialLinks: {
-      linkedin: '',
-      twitter: '',
-      facebook: '',
-      instagram: '',
-      website: ''
-    }
-  },
-  {
-    id: 'dr-tigist',
-    name: 'Dr. Tigist Kahsay',
-    credentials: 'MD',
-    role: 'Co-Founder & Co-host',
-    specialties: ['Emergency Medicine', 'Dialysis Care', 'Telemedicine', 'TB/HIV Care'],
-    education: ['MD - Jimma University Medical College'],
-    experience: 'Girum Hospital (ER & Dialysis), St Urael Internal Medicine Specialty Clinic',
-    image: '/dr-tigist.jpg',
-    socialLinks: {
-      linkedin: '',
-      twitter: '',
-      facebook: '',
-      instagram: '',
-      website: ''
-    }
-  },
-  {
-    id: 'dr-biruketawit',
-    name: 'Dr. Birucketawit Alebachew',
-    credentials: 'MD, BSc',
-    role: 'Co-Founder & Co-host',
-    specialties: ['Public Health', 'Quality Control', 'Project Management', 'Healthcare Delivery'],
-    education: ['MD - Yirgalem Hospital Medical College', 'BSc Public Health - University of Gondar'],
-    experience: 'Kotebe Health Center, Pioneer College, FMHACA Quality Control',
-    image: '/dr-birucketawit.jpg',
-    socialLinks: {
-      linkedin: '',
-      twitter: '',
-      facebook: '',
-      instagram: '',
-      website: ''
-    }
-  }
-]
-
 type SocialLinks = {
   linkedin?: string
   twitter?: string
@@ -90,16 +36,21 @@ type TeamMember = {
 }
 
 export default function TeamPage() {
-  const [team, setTeam] = useState(initialTeam)
+  const [team, setTeam] = useState<TeamMember[]>([])
+  const [loading, setLoading] = useState(true)
   const [editingMember, setEditingMember] = useState<TeamMember | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchTeam() {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000)
+
       try {
-        const response = await fetch('/api/team')
+        const response = await fetch('/api/team', { signal: controller.signal })
         const data = await response.json()
+        clearTimeout(timeoutId)
         if (Array.isArray(data.team)) {
           setTeam(
             data.team.map((m: any) => ({
@@ -115,8 +66,11 @@ export default function TeamPage() {
             }))
           )
         }
-      } catch {
-        // Keep fallback initialTeam
+      } catch (error: any) {
+        clearTimeout(timeoutId)
+        // Keep empty state on error
+      } finally {
+        setLoading(false)
       }
     }
 
@@ -177,6 +131,9 @@ export default function TeamPage() {
       education: educationInput.split('\n').map(s => s.trim()).filter(Boolean)
     }
 
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
       if (isAdding) {
         const response = await fetch('/api/team', {
@@ -193,10 +150,13 @@ export default function TeamPage() {
             image: updatedMember.image,
             color: 'from-primary-500 to-primary-600',
             socialLinks: updatedMember.socialLinks || {}
-          })
+          }),
+          signal: controller.signal
         })
 
         const data = await response.json()
+        clearTimeout(timeoutId)
+
         if (response.ok && data.member) {
           setTeam([...team, {
             id: data.member.id,
@@ -223,10 +183,13 @@ export default function TeamPage() {
             experience: updatedMember.experience,
             image: updatedMember.image,
             socialLinks: updatedMember.socialLinks || {}
-          })
+          }),
+          signal: controller.signal
         })
 
         const data = await response.json()
+        clearTimeout(timeoutId)
+
         if (response.ok && data.member) {
           setTeam(team.map(m => m.id === editingMember.id ? {
             ...m,
@@ -237,15 +200,30 @@ export default function TeamPage() {
           } : m))
         }
       }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      console.error('Failed to save team member:', error)
     } finally {
       closeEditor()
     }
   }
 
   const deleteMember = async (id: string) => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 10000)
+
     try {
-      await fetch(`/api/team/${id}`, { method: 'DELETE' })
-      setTeam(team.filter(m => m.id !== id))
+      const response = await fetch(`/api/team/${id}`, { 
+        method: 'DELETE',
+        signal: controller.signal
+      })
+      clearTimeout(timeoutId)
+      if (response.ok) {
+        setTeam(team.filter(m => m.id !== id))
+      }
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      console.error('Failed to delete team member:', error)
     } finally {
       setShowDeleteConfirm(null)
     }
@@ -269,11 +247,15 @@ export default function TeamPage() {
       </div>
 
       {/* Team Grid */}
+      {loading ? (
+        <div className="flex items-center justify-center h-64">
+          <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
+        </div>
+      ) : (
       <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         {team.map((member) => (
           <motion.div
             key={member.id}
-            layout
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
@@ -296,8 +278,8 @@ export default function TeamPage() {
               <p className="text-gray-500 text-sm">{member.role}</p>
 
               <div className="mt-4 flex flex-wrap gap-1">
-                {member.specialties.slice(0, 3).map((specialty, idx) => (
-                  <span key={idx} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                {member.specialties.slice(0, 3).map((specialty) => (
+                  <span key={specialty} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
                     {specialty}
                   </span>
                 ))}
@@ -328,6 +310,7 @@ export default function TeamPage() {
           </motion.div>
         ))}
       </div>
+      )}
 
       {/* Edit/Add Modal */}
       <AnimatePresence>

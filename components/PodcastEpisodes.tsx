@@ -17,6 +17,7 @@ interface Video {
 export default function PodcastEpisodes() {
   const [videos, setVideos] = useState<Video[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
 
   useEffect(() => {
     async function fetchVideos() {
@@ -29,13 +30,14 @@ export default function PodcastEpisodes() {
         console.error('Failed to fetch videos:', error)
       } finally {
         setLoading(false)
+        setHasLoaded(true)
       }
     }
 
     fetchVideos()
   }, [])
 
-  if (loading) {
+  if (!hasLoaded) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-primary-500" />

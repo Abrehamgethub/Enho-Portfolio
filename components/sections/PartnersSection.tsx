@@ -1,4 +1,3 @@
-// @ts-nocheck
 'use client'
 
 import { useState, useEffect } from 'react'
@@ -13,29 +12,11 @@ import { Logo } from '@/components/Logo'
 import { FadeInUp, FadeInLeft, FadeInRight, ScaleIn, StaggerContainer, StaggerItem, HoverScale } from '@/components/Animations'
 import ContactForm from '@/components/ContactForm'
 import PodcastEpisodes from '@/components/PodcastEpisodes'
-// Helper function to extract YouTube video ID
-function getYouTubeVideoId(url: string | undefined): string | null {
-  if (!url) return null
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/
-  const match = url.match(regExp)
-  if (match && match[2].length === 11) {
-    return match[2]
-  }
-  return null
-}
-
-// Get YouTube thumbnail - use hqdefault as it's always available
-function getYouTubeThumbnail(url: string | undefined): string | null {
-  const videoId = getYouTubeVideoId(url)
-  if (videoId) {
-    // Use hqdefault (480x360) as it's always available for all videos
-    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`
-  }
-  return null
-}
+import { getYouTubeVideoId, getYouTubeThumbnail } from '@/lib/youtube'
+import { fetchWithTimeout } from '@/lib/fetchWithTimeout'
 
 interface SponsorData {
-  _id: string
+  id: string
   name: string
   nameAmharic?: string
   logo?: string
@@ -50,28 +31,26 @@ interface SponsorData {
 }
 
 
-import { initialSponsors } from '@/lib/sponsors-data'
-
 export default function PartnersSection() {
-  const [sponsors, setSponsors] = useState<SponsorData[]>(initialSponsors)
+  const [sponsors, setSponsors] = useState<SponsorData[]>([])
   const [loading, setLoading] = useState(true)
+  const [hasLoaded, setHasLoaded] = useState(false)
   const [activeType, setActiveType] = useState('all')
   const [expandedSponsor, setExpandedSponsor] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchSponsors() {
       try {
-        const response = await fetch('/api/sponsors')
+        const response = await fetchWithTimeout('/api/sponsors')
         if (response.ok) {
           const data = await response.json()
-          if (data.sponsors && data.sponsors.length > 0) {
-            setSponsors(data.sponsors)
-          }
+          setSponsors(data.sponsors || [])
         }
       } catch (error) {
         console.error('Failed to fetch sponsors:', error)
       } finally {
         setLoading(false)
+        setHasLoaded(true)
       }
     }
     fetchSponsors()
@@ -128,6 +107,20 @@ export default function PartnersSection() {
           </div>
         </FadeInUp>
 
+        {!hasLoaded ? (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-2xl overflow-hidden shadow-lg animate-pulse">
+                <div className="aspect-video bg-gray-200" />
+                <div className="p-5 space-y-3">
+                  <div className="h-5 bg-gray-200 rounded w-3/4" />
+                  <div className="h-4 bg-gray-200 rounded w-1/2" />
+                  <div className="h-4 bg-gray-200 rounded w-full" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredSponsors.length === 0 ? (
             <div className="col-span-full text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100">
@@ -142,7 +135,7 @@ export default function PartnersSection() {
               
               return (
                 <motion.div
-                  key={sponsor._id}
+                  key={sponsor.id}
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
@@ -206,12 +199,12 @@ export default function PartnersSection() {
                   </div>
                   
                   <div className="mt-3">
-                    <div className={`text-gray-600 text-sm ${expandedSponsor === sponsor._id ? '' : 'line-clamp-2'}`}>
+                    <div className={`text-gray-600 text-sm ${expandedSponsor === sponsor.id ? '' : 'line-clamp-2'}`}>
                       {sponsor.description}
                     </div>
                     
                     {/* Expanded Content */}
-                    {expandedSponsor === sponsor._id && (
+                    {expandedSponsor === sponsor.id && (
                       <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
@@ -232,7 +225,7 @@ export default function PartnersSection() {
                             <div className="grid grid-cols-3 gap-2">
                               {sponsor.photos.map((photo: string, i: number) => (
                                 <img 
-                                  key={i} 
+                                  key={`${photo}-${i}`} 
                                   src={photo} 
                                   alt={`${sponsor.name} - Photo ${i + 1}`}
                                   className="w-full aspect-square object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
@@ -271,11 +264,11 @@ export default function PartnersSection() {
                     
                     {((sponsor.description?.length ?? 0) > 80 || (sponsor.photos?.length ?? 0) > 0 || sponsor.episodeUrl) && (
                       <button 
-                        onClick={() => toggleSponsorDetails(sponsor._id)}
+                        onClick={() => toggleSponsorDetails(sponsor.id)}
                         className="text-amber-600 text-sm font-medium mt-2 hover:text-amber-700 transition-colors flex items-center"
                       >
-                        {expandedSponsor === sponsor._id ? 'Show Less' : 'View Details'}
-                        <ChevronRight className={`w-4 h-4 transition-transform ${expandedSponsor === sponsor._id ? 'transform rotate-90' : ''}`} />
+                        {expandedSponsor === sponsor.id ? 'Show Less' : 'View Details'}
+                        <ChevronRight className={`w-4 h-4 transition-transform ${expandedSponsor === sponsor.id ? 'transform rotate-90' : ''}`} />
                       </button>
                     )}
                   </div>
@@ -285,6 +278,8 @@ export default function PartnersSection() {
           })
         )}
       </div>
+        )}
+
 
         {/* Call to Action for potential sponsors */}
         <FadeInUp delay={0.3} className="mt-12">

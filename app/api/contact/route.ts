@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { db } from '@/lib/firebase'
-import { collection, addDoc } from 'firebase/firestore'
+import { firebaseAdminDb, isAdminEnabled } from '@/lib/firebase-admin'
 import nodemailer from 'nodemailer'
 
 // Email notification function
@@ -51,6 +50,10 @@ This message was sent from the Eneho Egna website contact form.
 }
 
 export async function POST(request: NextRequest) {
+  if (!isAdminEnabled) {
+    return NextResponse.json({ error: 'Database not available' }, { status: 503 })
+  }
+
   try {
     const body = await request.json()
     const { name, email, subject, message } = body
@@ -66,7 +69,7 @@ export async function POST(request: NextRequest) {
     let savedMessage;
     try {
       // 1. Save to database FIRST
-      savedMessage = await addDoc(collection(db, "messages"), {
+      const docRef = await firebaseAdminDb.collection('messages').add({
         name,
         email,
         subject: subject || 'No Subject',
@@ -74,6 +77,7 @@ export async function POST(request: NextRequest) {
         read: false,
         date: new Date().toISOString()
       })
+      savedMessage = { id: docRef.id }
       console.log('✅ New contact submission saved:', savedMessage.id)
     } catch (error: any) {
       // Return the EXACT error message to not hide silent failures

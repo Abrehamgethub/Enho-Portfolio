@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateCredentials, generateToken, createSession } from '@/lib/auth'
+import { rateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: NextRequest) {
+  if (!rateLimit(request, { maxRequests: 5, windowMs: 15 * 60 * 1000 })) {
+    return NextResponse.json({ error: 'Too many login attempts. Please try again later.' }, { status: 429 })
+  }
+
   try {
     const body = await request.json()
     const { username, password } = body
